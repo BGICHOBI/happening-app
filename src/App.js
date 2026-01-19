@@ -88,6 +88,9 @@ const [buddyRequests, setBuddyRequests] = useState([]);
 const [buddies, setBuddies] = useState([]);
 const [pendingRequests, setPendingRequests] = useState([]);
 const [buddyStatus, setBuddyStatus] = useState({});
+const [buddiesTab, setBuddiesTab] = useState('my-buddies');
+const [suggestedBuddies, setSuggestedBuddies] = useState([]);
+const [mutualConnections, setMutualConnections] = useState({});
 
 // ADD THESE SOCIAL PROOF STATES:
 const [eventAttendees, setEventAttendees] = useState({}); // { eventId: [users] }
@@ -1709,6 +1712,13 @@ const LiveEventBadge = ({ event, size = 'md', showCountdown = false }) => {
   );
 };
 
+// Calculate suggested buddies
+useEffect(() => {
+  if (user && buddies.length > 0 && view === 'buddies') {
+    calculateSuggestedBuddies();
+  }
+}, [buddies, eventRSVPs, events, view, user]);
+
 // // Fetch buddies when user logs in
 // useEffect(() => {
 //   if (user && authToken) {
@@ -1842,6 +1852,51 @@ const startChatPolling = (eventId) => {
   
   return interval;
 };
+
+const calculateSuggestedBuddies = () => {
+  const suggestions = new Map();
+  
+  // Find people from same events
+  Object.entries(eventRSVPs).forEach(([eventId, rsvps]) => {
+    const goingList = rsvps.going || [];
+    goingList.forEach(attendee => {
+      if (attendee.user_id !== user.id && !buddies.some(b => b.buddy_id === attendee.user_id)) {
+        const key = attendee.user_id;
+        if (!suggestions.has(key)) {
+          suggestions.set(key, {
+            ...attendee,
+            score: 0,
+            reasons: [],
+            mutualBuddies: 0,
+            sharedEvents: []
+          });
+        }
+        const suggestion = suggestions.get(key);
+        suggestion.score += 2;
+        suggestion.sharedEvents.push(eventId);
+        
+        // Check for mutual buddies
+        const mutuals = buddies.filter(buddy => {
+          // This would need backend support to know buddy's connections
+          return false; // Placeholder
+        });
+        suggestion.mutualBuddies = mutuals.length;
+        
+        if (suggestion.sharedEvents.length > 1) {
+          suggestion.reasons.push(`${suggestion.sharedEvents.length} shared events`);
+        }
+      }
+    });
+  });
+
+  // Convert to array and sort by score
+  const sorted = Array.from(suggestions.values())
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10);
+  
+  setSuggestedBuddies(sorted);
+};
+
 
 // Direct Messages functions
 const fetchConversations = async () => {
@@ -3753,6 +3808,7 @@ const LazyImage = ({ src, alt, className, onClick }) => {
   );
 };
 
+
 // Scroll to Top Button
 const ScrollToTop = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -4537,7 +4593,7 @@ if (view === 'discover') {
                         )}
                       </button>
 
-                      {/* ADD BUDDY ACTIVITY BUTTON HERE */}
+                      {/* ADD BUDDY ACTIVITY BUTTON HERE
                       {user && buddies.length > 0 && (
                         <button
                           onClick={() => {
@@ -4554,7 +4610,7 @@ if (view === 'discover') {
                             </span>
                           )}
                         </button>
-                      )}
+                      )} */}
 
                       <button
                         onClick={() => {
@@ -8057,7 +8113,7 @@ if (view === 'my-events') {
          userAttendingEvents.length === 0 && 
          userInterestedEvents.length === 0 && (
           <EmptyState
-            icon={Calendar}
+            //icon={Calendar}
             title="No Events Yet"
             description="Start by creating your first event or explore events to join"
             actionLabel="Explore Events"
@@ -8162,44 +8218,328 @@ if (view === 'my-events') {
 // Buddies Page View
 if (view === 'buddies') {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-24">
+      <ToastNotification />
+      
+      {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            <ToastNotification />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setView('discover')}
+                className="p-2 hover:bg-gray-100 rounded-full transition-all"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">Buddies</h1>
+                <p className="text-sm text-gray-500">
+                  {buddies.length} {buddies.length === 1 ? 'connection' : 'connections'}
+                </p>
+              </div>
+            </div>
+            
+            {/* Search buddies */}
             <button
-              onClick={() => setView('discover')}
+              onClick={() => showInfoToast('Search coming soon!')}
               className="p-2 hover:bg-gray-100 rounded-full transition-all"
             >
-              <X className="w-6 h-6" />
+              <Search className="w-5 h-5 text-gray-600" />
             </button>
-            <h1 className="text-xl font-bold text-gray-900">Buddies</h1>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-2 mt-4 overflow-x-auto scrollbar-hide">
+            <button
+              onClick={() => setBuddiesTab('my-buddies')}
+              className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${
+                buddiesTab === 'my-buddies'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              My Buddies ({buddies.length})
+            </button>
+            <button
+              onClick={() => setBuddiesTab('activity')}
+              className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${
+                buddiesTab === 'activity'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Activity
+              {buddyActivity.length > 0 && (
+                <span className="ml-2 px-2 py-0.5 bg-red-500 text-white rounded-full text-xs">
+                  {buddyActivity.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setBuddiesTab('suggested')}
+              className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${
+                buddiesTab === 'suggested'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Suggested
+              {suggestedBuddies.length > 0 && (
+                <span className="ml-2 px-2 py-0.5 bg-purple-500 text-white rounded-full text-xs">
+                  {suggestedBuddies.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setBuddiesTab('pending')}
+              className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${
+                buddiesTab === 'pending'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Requests
+              {pendingRequests.length > 0 && (
+                <span className="ml-2 px-2 py-0.5 bg-orange-500 text-white rounded-full text-xs">
+                  {pendingRequests.length}
+                </span>
+              )}
+            </button>
           </div>
         </div>
       </header>
 
       <div className="max-w-4xl mx-auto px-4 py-6">
-        {/* Pending Requests */}
-        {pendingRequests.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Pending Requests ({pendingRequests.length})
-            </h2>
-            <div className="space-y-3">
-             {pendingRequests.map((request) => (
-  <div key={request.id} className="bg-white rounded-2xl shadow-sm p-4">
-    <div className="flex items-center gap-4">
-      {request.sender_profile_picture ? (
-        <img 
-          src={request.sender_profile_picture} 
-          alt={request.sender_name}
-          className="w-12 h-12 rounded-full object-cover border-2 border-blue-200"
-        />
-      ) : (
-        <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-          {request.sender_name.charAt(0).toUpperCase()}
-        </div>
-      )}
+        {/* MY BUDDIES TAB */}
+        {buddiesTab === 'my-buddies' && (
+          <div className="space-y-3">
+            {buddies.length === 0 ? (
+              <BuddiesEmptyState onExploreEvents={() => setView('explore')} />
+            ) : (
+              buddies.map((buddy) => {
+                // Calculate last interaction (placeholder)
+                const lastInteraction = 'Recently active';
+                
+                return (
+                  <div key={buddy.id} className="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-all">
+                    <div className="flex items-center gap-4">
+                      {/* Avatar */}
+                      <div className="relative">
+                        {buddy.buddy_profile_picture ? (
+                          <img 
+                            src={buddy.buddy_profile_picture} 
+                            alt={buddy.buddy_name}
+                            className="w-14 h-14 rounded-full object-cover border-2 border-indigo-200"
+                          />
+                        ) : (
+                          <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                            {buddy.buddy_name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        {/* Online indicator */}
+                        <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                      </div>
+                      
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-gray-900 truncate">{buddy.buddy_name}</h3>
+                        <p className="text-sm text-gray-500">
+                          Buddies since {new Date(buddy.since).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">{lastInteraction}</p>
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setSelectedConversation({
+                              userId: buddy.buddy_id,
+                              userName: buddy.buddy_name,
+                              userProfilePicture: buddy.buddy_profile_picture
+                            });
+                            setView('dm-conversation');
+                            fetchDmConversation(buddy.buddy_id);
+                            const interval = startDmPolling(buddy.buddy_id);
+                            setPollingInterval(interval);
+                          }}
+                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-all flex items-center gap-2"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          Message
+                        </button>
+                        <button
+                          onClick={() => showInfoToast('Profile view coming soon!')}
+                          className="p-2 hover:bg-gray-100 rounded-lg transition-all"
+                          title="View Profile"
+                        >
+                          <UserIcon className="w-5 h-5 text-gray-600" />
+                        </button>
+                        <button
+                          onClick={() => removeBuddy(buddy.id)}
+                          className="p-2 hover:bg-red-50 rounded-lg transition-all"
+                          title="Remove Buddy"
+                        >
+                          <UserX className="w-5 h-5 text-red-600" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {/* ACTIVITY TAB */}
+        {buddiesTab === 'activity' && (
+          <div className="space-y-4">
+            {buddyActivity.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4 opacity-40">👥</div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">No activity yet</h3>
+                <p className="text-gray-600">
+                  When your buddies RSVP to events, you'll see their activity here
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {buddyActivity.map((activity, idx) => (
+                  <div key={idx} className="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-all">
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                        {activity.user_name?.charAt(0).toUpperCase() || '?'}
+                      </div>
+                      <div className="flex-1">
+                        <div className="mb-1">
+                          <span className="font-bold text-gray-900">{activity.user_name}</span>
+                          <span className="text-gray-600"> is </span>
+                          <span className={`font-bold ${
+                            activity.rsvp_status === 'going' ? 'text-green-600' :
+                            activity.rsvp_status === 'maybe' ? 'text-yellow-600' :
+                            'text-gray-600'
+                          }`}>
+                            {activity.rsvp_status === 'going' ? 'going' :
+                             activity.rsvp_status === 'maybe' ? 'interested' :
+                             'not going'}
+                          </span>
+                          <span className="text-gray-600"> to</span>
+                        </div>
+                        <div className="text-sm font-semibold text-gray-900 mb-1">
+                          {activity.event_title}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {new Date(activity.created_at).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const event = events.find(e => e.id === activity.event_id);
+                          if (event) {
+                            setSelectedEvent(event);
+                            setView('event-detail');
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-semibold hover:bg-indigo-200 transition-all"
+                      >
+                        View Event
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* SUGGESTED BUDDIES TAB */}
+        {buddiesTab === 'suggested' && (
+          <div className="space-y-3">
+            {suggestedBuddies.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4 opacity-40">✨</div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">No suggestions yet</h3>
+                <p className="text-gray-600">
+                  Attend more events to find people you might know!
+                </p>
+              </div>
+            ) : (
+              suggestedBuddies.map((suggestion) => (
+                <div key={suggestion.user_id} className="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-all">
+                  <div className="flex items-center gap-4">
+                    {suggestion.user_profile_picture ? (
+                      <img 
+                        src={suggestion.user_profile_picture} 
+                        alt={suggestion.user_name}
+                        className="w-14 h-14 rounded-full object-cover border-2 border-purple-200"
+                      />
+                    ) : (
+                      <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                        {suggestion.user_name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-gray-900 truncate">{suggestion.user_name}</h3>
+                      {suggestion.reasons && suggestion.reasons.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {suggestion.reasons.map((reason, idx) => (
+                            <span key={idx} className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+                              {reason}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {suggestion.mutualBuddies > 0 && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {suggestion.mutualBuddies} mutual {suggestion.mutualBuddies === 1 ? 'buddy' : 'buddies'}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <button
+                      onClick={() => {
+                        sendBuddyRequest(suggestion.user_id, suggestion.user_name);
+                        setSuggestedBuddies(suggestedBuddies.filter(s => s.user_id !== suggestion.user_id));
+                      }}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-sm font-semibold hover:shadow-lg transition-all flex items-center gap-2"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      Add
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* PENDING REQUESTS TAB */}
+        {buddiesTab === 'pending' && (
+          <div className="space-y-3">
+            {pendingRequests.length === 0 ? (
+              <PendingRequestsEmptyState />
+            ) : (
+              pendingRequests.map((request) => (
+                <div key={request.id} className="bg-white rounded-xl shadow-sm p-4">
+                  <div className="flex items-center gap-4">
+                    {request.sender_profile_picture ? (
+                      <img 
+                        src={request.sender_profile_picture} 
+                        alt={request.sender_name}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-blue-200"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                        {request.sender_name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-900">{request.sender_name}</h3>
                       <p className="text-sm text-gray-500">
@@ -8222,72 +8562,13 @@ if (view === 'buddies') {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              ))
+            )}
           </div>
         )}
-
-        {/* My Buddies */}
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            My Buddies ({buddies.length})
-          </h2>
-          {buddies.length === 0 ? (
-  <BuddiesEmptyState onExploreEvents={() => setView('explore')} />
-) : (
-            <div className="space-y-3">
-             {buddies.map((buddy) => (
-  <div key={buddy.id} className="bg-white rounded-2xl shadow-sm p-4">
-    <div className="flex items-center gap-4">
-      {buddy.buddy_profile_picture ? (
-        <img 
-          src={buddy.buddy_profile_picture} 
-          alt={buddy.buddy_name}
-          className="w-12 h-12 rounded-full object-cover border-2 border-indigo-200"
-        />
-      ) : (
-        <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-          {buddy.buddy_name.charAt(0).toUpperCase()}
-        </div>
-      )}
-                    <div className="flex-1">
-                      <h3 className="font-bold text-gray-900">{buddy.buddy_name}</h3>
-                      <p className="text-sm text-gray-500">
-                        Buddies since {new Date(buddy.since).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          setSelectedConversation({
-                            userId: buddy.buddy_id,
-                            userName: buddy.buddy_name
-                          });
-                          setView('dm-conversation');
-                          fetchDmConversation(buddy.buddy_id);
-                          const interval = startDmPolling(buddy.buddy_id);
-                          setPollingInterval(interval);
-                        }}
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg hover:shadow-sm transition-all font-semibold"
-                      >
-                        Message
-                      </button>
-                      <button
-                        onClick={() => removeBuddy(buddy.id)}
-                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-red-100 hover:text-red-600 transition-all font-semibold"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
 
-{/* Bottom Navigation */}
+      {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
         <div className="max-w-screen-xl mx-auto px-4">
           <div className="flex items-center justify-around py-2">
@@ -8297,66 +8578,35 @@ if (view === 'buddies') {
               </svg>
               <span className="text-xs font-medium">Feed</span>
             </button>
-
-            <button
-              onClick={() => setView('explore')}
-              className="flex flex-col items-center gap-1 px-4 py-2 text-gray-500"
-            >
+            <button onClick={() => setView('explore')} className="flex flex-col items-center gap-1 px-4 py-2 text-gray-500">
               <Search className="w-6 h-6" />
               <span className="text-xs font-medium">Explore</span>
             </button>
-
-            <button
-              onClick={() => {
-                if (user) {
-                  setView('organizer');
-                } else {
-                  showInfoToast('Please login to create');
-                  setView('login');
-                }
-              }}
-              className="flex flex-col items-center gap-1 px-4 py-2 text-gray-900"
-            >
+            <button onClick={() => { if (user) { setView('organizer'); } else { showInfoToast('Please login to create'); setView('login'); }}} className="flex flex-col items-center gap-1 px-4 py-2 text-gray-900">
               <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center -mt-6 shadow-sm">
                 <Plus className="w-6 h-6 text-white" />
               </div>
               <span className="text-xs font-medium mt-1">Create</span>
             </button>
-
-            <button
-              onClick={() => {
-                if (user) {
-                  setView('my-events');
-                } else {
-                  showInfoToast('Please login to view events');
-                  setView('login');
-                }
-              }}
-              className="flex flex-col items-center gap-1 px-4 py-2 text-gray-500"
-            >
+            <button onClick={() => { if (user) { setView('my-events'); } else { showInfoToast('Please login to view events'); setView('login'); }}} className="flex flex-col items-center gap-1 px-4 py-2 text-gray-500">
               <Calendar className="w-6 h-6" />
               <span className="text-xs font-medium">Events</span>
             </button>
-
-            <button
-  onClick={() => setView('profile')}
-  className="flex flex-col items-center gap-1 px-4 py-2 text-gray-500"
->
-  {user?.profile_picture ? (
-    <img 
-      src={user.profile_picture} 
-      alt={user.name}
-      className="w-6 h-6 rounded-full object-cover border border-gray-300"
-    />
-  ) : (
-    <UserIcon className="w-6 h-6" />
-  )}
-  <span className="text-xs font-medium">Profile</span>
-</button>
+            <button onClick={() => setView('profile')} className="flex flex-col items-center gap-1 px-4 py-2 text-gray-500">
+              {user?.profile_picture ? (
+                <img 
+                  src={user.profile_picture} 
+                  alt={user.name}
+                  className="w-6 h-6 rounded-full object-cover border border-gray-300"
+                />
+              ) : (
+                <UserIcon className="w-6 h-6" />
+              )}
+              <span className="text-xs font-medium">Profile</span>
+            </button>
           </div>
         </div>
       </nav>
-     
     </div>
   );
 }
