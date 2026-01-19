@@ -1478,8 +1478,37 @@ const handleDeleteComment = async (commentId, postId) => {
 
 // Polling for real-time updates
 const startPolling = (eventId) => {
-  const interval = setInterval(() => {
-    fetchPostsForEvent(eventId, false); // Don't show loading spinner during polling
+  const interval = setInterval(async () => {
+    // Fetch from both sources during polling
+    try {
+      const [feedPostsResponse, eventPostsResponse] = await Promise.all([
+        fetch(`http://localhost:5000/api/feed-posts`),
+        fetch(`http://localhost:5000/api/posts/event/${eventId}`)
+      ]);
+      
+      let allPosts = [];
+      
+      if (feedPostsResponse.ok) {
+        const feedData = await feedPostsResponse.json();
+        const eventFeedPosts = feedData.filter(post => post.event_id === eventId);
+        allPosts = [...eventFeedPosts];
+      }
+      
+      if (eventPostsResponse.ok) {
+        const eventData = await eventPostsResponse.json();
+        allPosts = [...allPosts, ...eventData];
+      }
+      
+      const uniquePosts = allPosts.filter((post, index, self) =>
+        index === self.findIndex((p) => p.id === post.id)
+      );
+      
+      uniquePosts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      setPosts(uniquePosts);
+      
+    } catch (error) {
+      console.error('Error polling posts:', error);
+    }
   }, 5000); // Poll every 5 seconds
   
   return interval;
@@ -2128,7 +2157,32 @@ const fetchFeedPosts = async (phase = null) => {
     
     const response = await fetch(url, { headers });
     if (response.ok) {
-      const data = await response.json();
+      let data = await response.json();
+      
+      // Client-side filtering by event phase for accuracy
+      if (phase) {
+        data = data.filter(post => {
+          const event = events.find(e => e.id === post.event_id);
+          if (!event) return false;
+          
+          const eventDateTime = new Date(`${event.date}T${event.time}`);
+          const now = new Date();
+          const eventEndTime = new Date(eventDateTime.getTime() + (6 * 60 * 60 * 1000)); // Assume 6hr duration
+          
+          if (phase === 'live') {
+            // Live: event has started but not ended
+            return now >= eventDateTime && now <= eventEndTime;
+          } else if (phase === 'upcoming') {
+            // Upcoming: event hasn't started yet
+            return now < eventDateTime;
+          } else if (phase === 'past') {
+            // Past: event has ended
+            return now > eventEndTime;
+          }
+          return true;
+        });
+      }
+      
       setFeedPosts(data);
     }
   } catch (error) {
@@ -2155,19 +2209,48 @@ const createFeedPost = async () => {
   }
 
   try {
+    // Determine post type based on media
+    let postType = 'text';
+    if (newFeedPost.mediaUrl) {
+      postType = newFeedPost.postType || 'photo';
+    }
+    
+    // Determine event phase
+    const event = events.find(e => e.id === newFeedPost.eventId);
+    let eventPhase = 'upcoming';
+    if (event) {
+      const phase = getEventPhase(event);
+      eventPhase = phase === 'live' ? 'live' : phase === 'past' ? 'past' : 'upcoming';
+    }
+    
+    const postData = {
+      eventId: newFeedPost.eventId,
+      eventTitle: newFeedPost.eventTitle,
+      eventDate: newFeedPost.eventDate,
+      eventLocation: newFeedPost.eventLocation,
+      postType: postType,
+      content: newFeedPost.content,
+      mediaUrl: newFeedPost.mediaUrl || '',
+      eventPhase: eventPhase,
+      isCheckedIn: eventPhase === 'live' ? true : false
+    };
+    
+    console.log('📤 Creating post:', postData);
+    
     const response = await fetch('http://localhost:5000/api/feed-posts', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${authToken}`
       },
-      body: JSON.stringify({
-        ...newFeedPost,
-        isCheckedIn: false // TODO: Check actual check-in status
-      })
+      body: JSON.stringify(postData)
     });
 
     if (response.ok) {
+      const newPost = await response.json();
+      console.log('✅ Post created successfully:', newPost);
+      
+      // Close composer and reset
       setShowPostComposer(false);
       setNewFeedPost({
         eventId: null,
@@ -2179,13 +2262,25 @@ const createFeedPost = async () => {
         postType: 'text',
         eventPhase: 'upcoming'
       });
+      setPostComposerEvent(null);
+      
+      // Refresh both feeds
       fetchFeedPosts(feedFilter === 'all' ? null : feedFilter);
+      
+      // If we're on the event detail page, also refresh the event feed
+      if (selectedEvent && selectedEvent.id === newFeedPost.eventId) {
+        fetchPostsForEvent(selectedEvent.id);
+      }
+      
+      showSuccessToast('Post shared successfully! 🎉');
     } else {
       const data = await response.json();
-      showErrorToast(data.error || 'Failed to create post');
+      console.error('❌ Post creation failed:', data);
+      showErrorToast(data.error || data.message || 'Failed to create post');
     }
   } catch (error) {
-    console.error('Error creating post:', error);
+    console.error('❌ Network error:', error);
+    showErrorToast('Failed to create post. Please check your connection.');
   }
 };
 
@@ -3443,6 +3538,8 @@ const PullToRefresh = ({ onRefresh, children }) => {
   );
 };
 
+
+
 // Lazy Loading Image Component
 const LazyImage = ({ src, alt, className, onClick }) => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -4251,15 +4348,7 @@ if (view === 'discover') {
                 <div className="flex items-center gap-2">
                   {user ? (
                     <>
-                      <button
-                        onClick={() => setView('explore')}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-all"
-                        title="Explore Events"
-                      >
-                        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                      </button>
+                
                       
                       <button
                         onClick={() => {
@@ -4387,18 +4476,20 @@ if (view === 'discover') {
                   🌟 For You
                 </button>
                 <button
-                  onClick={() => {
-                    setFeedFilter('live');
-                    fetchFeedPosts('live');
-                  }}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
-                    feedFilter === 'live'
-                      ? 'bg-gray-900 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
-                  }`}
-                >
-                  🔴 Live Now
-                </button>
+  onClick={() => {
+    setFeedFilter('live');
+    fetchFeedPosts('live');
+  }}
+  className={`px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
+    feedFilter === 'live'
+      ? 'bg-gray-900 text-white'
+      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+  }`}
+>
+  🔴 Live Now
+</button>
+
+
                 <button
                   onClick={() => {
                     setFeedFilter('upcoming');
@@ -4570,20 +4661,34 @@ if (view === 'discover') {
     {/* Post Header */}
     <div className="p-4">
       <div className="flex items-start gap-3">
-        {post.user_id === user?.id && user?.profile_picture ? (
-          <img 
-            src={user.profile_picture} 
-            alt={post.user_name}
-            className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
-          />
-        ) : (
-          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold">
-            {post.user_name.charAt(0).toUpperCase()}
-          </div>
-        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-bold text-gray-900">{post.user_name}</h3>
+  <div 
+    onClick={() => {
+      setView('profile');
+    }}
+    className="cursor-pointer flex-shrink-0"
+  >
+    {post.user_id === user?.id && user?.profile_picture ? (
+      <img 
+        src={user.profile_picture} 
+        alt={post.user_name}
+        className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 hover:border-indigo-400 transition-all"
+      />
+    ) : (
+      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold hover:bg-gray-300 transition-all">
+        {post.user_name.charAt(0).toUpperCase()}
+      </div>
+    )}
+  </div>
+  <div className="flex-1 min-w-0">
+    <div className="flex items-center gap-2 flex-wrap">
+      <h3 
+        onClick={() => {
+          setView('profile');
+        }}
+        className="font-bold text-gray-900 hover:text-indigo-600 transition-colors cursor-pointer"
+      >
+        {post.user_name}
+      </h3>
                             
                             {/* Live Badge */}
                             {post.event_phase === 'live' && (
@@ -4642,21 +4747,41 @@ if (view === 'discover') {
                       )}
 
                       {/* Post Media */}
-                      {post.media_url && (
-                        <div className="mt-3">
-                          {post.post_type === 'video' ? (
-                            <video controls className="w-full rounded-lg max-h-96">
-                              <source src={post.media_url} />
-                            </video>
-                          ) : (
-                            <img
-                              src={post.media_url}
-                              alt="Post media"
-                              className="w-full rounded-lg max-h-96 object-cover"
-                            />
-                          )}
-                        </div>
-                      )}
+                     {post.media_url && (
+  <div className="mt-3">
+    {post.post_type === 'video' ? (
+      <video 
+        controls 
+        className="w-full rounded-lg max-h-96"
+        onError={(e) => {
+          console.error('Video load error:', e);
+          showErrorToast('Failed to load video');
+        }}
+      >
+        <source src={post.media_url} type="video/mp4" />
+        <source src={post.media_url} type="video/webm" />
+        Your browser does not support video playback.
+      </video>
+    ) : (
+      <img
+        src={post.media_url}
+        alt="Post media"
+        className="w-full rounded-lg max-h-96 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+        loading="lazy"
+        onError={(e) => {
+          console.error('Image load error:', e);
+          e.target.src = 'https://via.placeholder.com/800x400?text=Image+Not+Available';
+          showErrorToast('Failed to load image');
+        }}
+        onClick={() => {
+          setModalImage(post.media_url);
+          setModalEventTitle(post.user_name + "'s post");
+          setShowImageModal(true);
+        }}
+      />
+    )}
+  </div>
+)}
 
                       {/* Event Context Card - Enhanced */}
                       <div
@@ -5749,27 +5874,59 @@ if (view === 'event-detail' && selectedEvent) {
           {/* Social Actions - Lightweight */}
           <div className="grid grid-cols-2 gap-3">
             <button
-              onClick={() => {
-                setView('event-feed');
-                fetchPostsForEvent(selectedEvent.id);
-                const interval = startPolling(selectedEvent.id);
-                setPollingInterval(interval);
-              }}
-              className="bg-white rounded-xl shadow-lg p-4 hover:shadow-xl transition-all group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center text-2xl">
-                  📸
-                </div>
-                <div className="text-left flex-1">
-                  <div className="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">Event Feed</div>
-                  <div className="text-xs text-gray-500">Photos & updates</div>
-                </div>
-                <svg className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </button>
+  onClick={async () => {
+    setView('event-feed');
+    setPosts([]); // Clear old posts
+    
+    // Fetch posts from both sources
+    try {
+      const [feedPostsResponse, eventPostsResponse] = await Promise.all([
+        fetch(`http://localhost:5000/api/feed-posts`),
+        fetch(`http://localhost:5000/api/posts/event/${selectedEvent.id}`)
+      ]);
+      
+      let allPosts = [];
+      
+      if (feedPostsResponse.ok) {
+        const feedData = await feedPostsResponse.json();
+        const eventFeedPosts = feedData.filter(post => post.event_id === selectedEvent.id);
+        allPosts = [...eventFeedPosts];
+      }
+      
+      if (eventPostsResponse.ok) {
+        const eventData = await eventPostsResponse.json();
+        allPosts = [...allPosts, ...eventData];
+      }
+      
+      const uniquePosts = allPosts.filter((post, index, self) =>
+        index === self.findIndex((p) => p.id === post.id)
+      );
+      
+      uniquePosts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      setPosts(uniquePosts);
+      
+    } catch (error) {
+      console.error('Error loading posts:', error);
+    }
+    
+    const interval = startPolling(selectedEvent.id);
+    setPollingInterval(interval);
+  }}
+  className="bg-white rounded-xl shadow-lg p-4 hover:shadow-xl transition-all group"
+>
+  <div className="flex items-center gap-3">
+    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center text-2xl">
+      📸
+    </div>
+    <div className="text-left flex-1">
+      <div className="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">Event Feed</div>
+      <div className="text-xs text-gray-500">Photos & updates</div>
+    </div>
+    <svg className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+    </svg>
+  </div>
+</button>
 
             <button
               onClick={() => {
@@ -8729,25 +8886,9 @@ if (view === 'event-chat' && selectedEvent) {
 
   // Event Feed View - Redesigned
 if (view === 'event-feed' && selectedEvent) {
-  const fetchPosts = async () => {
-    try {
-      setLoadingPosts(true);
-      const response = await fetch(`http://localhost:5000/api/posts/event/${selectedEvent.id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setPosts(data);
-        // Fetch reactions for each post
-        // data.forEach(post => {
-        //   fetchPostReactions(post.id);
-        //   fetchPostComments(post.id);
-        // });
-      }
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-    } finally {
-      setLoadingPosts(false);
-    }
-  };
+ 
+
+  
 
   const handleCreatePost = async () => {
     if (!authToken) {
@@ -8777,7 +8918,35 @@ if (view === 'event-feed' && selectedEvent) {
 
       if (response.ok) {
         setNewPost({ type: 'comment', content: '', media_url: '' });
-        fetchPosts();
+        // Refresh posts after action
+try {
+  const [feedPostsResponse, eventPostsResponse] = await Promise.all([
+    fetch(`http://localhost:5000/api/feed-posts`),
+    fetch(`http://localhost:5000/api/posts/event/${selectedEvent.id}`)
+  ]);
+  
+  let allPosts = [];
+  
+  if (feedPostsResponse.ok) {
+    const feedData = await feedPostsResponse.json();
+    const eventFeedPosts = feedData.filter(post => post.event_id === selectedEvent.id);
+    allPosts = [...eventFeedPosts];
+  }
+  
+  if (eventPostsResponse.ok) {
+    const eventData = await eventPostsResponse.json();
+    allPosts = [...allPosts, ...eventData];
+  }
+  
+  const uniquePosts = allPosts.filter((post, index, self) =>
+    index === self.findIndex((p) => p.id === post.id)
+  );
+  
+  uniquePosts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  setPosts(uniquePosts);
+} catch (error) {
+  console.error('Error refreshing posts:', error);
+}
         showSuccessToast('Post shared!');
       }
     } catch (error) {
@@ -8805,7 +8974,35 @@ if (view === 'event-feed' && selectedEvent) {
       });
 
       if (response.ok) {
-        fetchPosts();
+        // Refresh posts after action
+try {
+  const [feedPostsResponse, eventPostsResponse] = await Promise.all([
+    fetch(`http://localhost:5000/api/feed-posts`),
+    fetch(`http://localhost:5000/api/posts/event/${selectedEvent.id}`)
+  ]);
+  
+  let allPosts = [];
+  
+  if (feedPostsResponse.ok) {
+    const feedData = await feedPostsResponse.json();
+    const eventFeedPosts = feedData.filter(post => post.event_id === selectedEvent.id);
+    allPosts = [...eventFeedPosts];
+  }
+  
+  if (eventPostsResponse.ok) {
+    const eventData = await eventPostsResponse.json();
+    allPosts = [...allPosts, ...eventData];
+  }
+  
+  const uniquePosts = allPosts.filter((post, index, self) =>
+    index === self.findIndex((p) => p.id === post.id)
+  );
+  
+  uniquePosts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  setPosts(uniquePosts);
+} catch (error) {
+  console.error('Error refreshing posts:', error);
+}
         showSuccessToast('Post deleted');
       } else {
         const data = await response.json();
