@@ -70,6 +70,13 @@ const [dmMessages, setDmMessages] = useState([]);
 const [newDmMessage, setNewDmMessage] = useState('');
 const [loadingDms, setLoadingDms] = useState(false);
 
+// NEW: Enhanced messaging states
+const [unreadCounts, setUnreadCounts] = useState({}); // { userId: unreadCount }
+const [typingUsers, setTypingUsers] = useState({}); // { userId: timestamp }
+const [onlineUsers, setOnlineUsers] = useState(new Set()); // Set of online user IDs
+const [messageReadStatus, setMessageReadStatus] = useState({}); // { messageId: readAt }
+const [lastSeenTimestamps, setLastSeenTimestamps] = useState({}); // { userId: timestamp }
+
 // Follow state
 const [followingEvents, setFollowingEvents] = useState([]);
 const [followingOrganizers, setFollowingOrganizers] = useState([]);
@@ -144,6 +151,8 @@ const [showPassword, setShowPassword] = useState(false);
 const [forgotPasswordView, setForgotPasswordView] = useState(false);
 const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
 const [resetEmailSent, setResetEmailSent] = useState(false);
+
+const messagesEndRef = useRef(null);
 
   // Auth state
   const [user, setUser] = useState(null);
@@ -642,6 +651,61 @@ const SkeletonGrid = ({ count = 6 }) => (
 );
 
 // ============================================
+// MESSAGING UI COMPONENTS
+// ============================================
+
+// Online Status Indicator
+const OnlineIndicator = ({ userId }) => {
+  const isOnline = onlineUsers.has(userId);
+  
+  if (!isOnline) return null;
+  
+  return (
+    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+  );
+};
+
+// Typing Indicator Component
+const TypingIndicator = ({ userName }) => (
+  <div className="flex items-center gap-2 px-4 py-2 text-sm text-gray-500">
+    <div className="flex gap-1">
+      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+    </div>
+    <span>{userName} is typing...</span>
+  </div>
+);
+
+// Read Receipt Component
+const ReadReceipt = ({ message, currentUserId }) => {
+  if (message.sender_id !== currentUserId) return null;
+  
+  const isRead = messageReadStatus[message.id];
+  
+  return (
+    <div className="flex items-center gap-1 text-xs text-gray-400 mt-1">
+      {isRead ? (
+        <>
+          <svg className="w-3 h-3 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+            <path d="M12.707 5.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0z"/>
+          </svg>
+          <span>Seen</span>
+        </>
+      ) : (
+        <>
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+          </svg>
+          <span>Sent</span>
+        </>
+      )}
+    </div>
+  );
+};
+
+// ============================================
 // EMPTY STATE COMPONENTS
 // ============================================
 
@@ -862,6 +926,12 @@ useEffect(() => {
   }
 }, [authToken]);
 
+
+useEffect(() => {
+  if (view === 'dm-conversation' && dmMessages.length > 0) {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }
+}, [dmMessages, view]);
 
   const fetchCurrentUser = async () => {
     try {
@@ -1786,6 +1856,14 @@ const fetchConversations = async () => {
     if (response.ok) {
       const data = await response.json();
       setConversations(data);
+      
+      // Calculate unread counts for each conversation
+      const unreadMap = {};
+      data.forEach(conv => {
+        // Count unread messages (messages from other user that haven't been read)
+        unreadMap[conv.other_user_id] = conv.unread_count || 0;
+      });
+      setUnreadCounts(unreadMap);
     }
   } catch (error) {
     console.error('Error fetching conversations:', error);
@@ -1807,6 +1885,9 @@ const fetchDmConversation = async (otherUserId, showLoading = true) => {
     if (response.ok) {
       const data = await response.json();
       setDmMessages(data);
+      
+      // Mark messages as read
+      await markMessagesAsRead(otherUserId);
     }
   } catch (error) {
     console.error('Error fetching DM conversation:', error);
@@ -1815,6 +1896,51 @@ const fetchDmConversation = async (otherUserId, showLoading = true) => {
       setLoadingDms(false);
     }
   }
+};
+
+// Mark messages as read
+const markMessagesAsRead = async (otherUserId) => {
+  if (!authToken) return;
+  
+  try {
+    await fetch(`http://localhost:5000/api/direct-messages/mark-read/${otherUserId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+    
+    // Update local unread counts
+    setUnreadCounts(prev => ({
+      ...prev,
+      [otherUserId]: 0
+    }));
+    
+    // Refresh conversations to update badge
+    fetchConversations();
+  } catch (error) {
+    console.error('Error marking messages as read:', error);
+  }
+};
+
+// Handle typing indicator
+let typingTimeout;
+const handleTyping = (otherUserId) => {
+  // Show local typing indicator
+  setTypingUsers(prev => ({
+    ...prev,
+    [otherUserId]: Date.now()
+  }));
+  
+  // Clear typing indicator after 3 seconds
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    setTypingUsers(prev => {
+      const updated = {...prev};
+      delete updated[otherUserId];
+      return updated;
+    });
+  }, 3000);
 };
 
 const handleSendDm = async (receiverId, receiverName) => {
@@ -2532,6 +2658,51 @@ const isFormValid = (formData, requiredFields) => {
 const showSuccessToast = (message) => showToast(message, 'success');
 const showErrorToast = (message) => showToast(message, 'error');
 const showInfoToast = (message) => showToast(message, 'info');
+
+// ============================================
+// MESSAGING HELPER FUNCTIONS
+// ============================================
+
+// Format timestamp in human-friendly way for inbox
+const formatMessageTime = (timestamp) => {
+  const now = new Date();
+  const msgDate = new Date(timestamp);
+  const diffMs = now - msgDate;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  
+  return msgDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+// Get relative time for chat view timestamps
+const getRelativeTime = (timestamp) => {
+  const now = new Date();
+  const msgDate = new Date(timestamp);
+  const diffMins = Math.floor((now - msgDate) / 60000);
+  
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m`;
+  if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h`;
+  return msgDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+// Check if messages should be grouped (within 5 minutes, same sender)
+const shouldGroupMessage = (currentMsg, prevMsg) => {
+  if (!prevMsg || currentMsg.sender_id !== prevMsg.sender_id) return false;
+  
+  const currentTime = new Date(currentMsg.created_at);
+  const prevTime = new Date(prevMsg.created_at);
+  const diffMinutes = (currentTime - prevTime) / 60000;
+  
+  return diffMinutes < 5;
+};
 
 // ADD THESE HELPER FUNCTIONS HERE:
 const getEventPhase = (event) => {
@@ -8347,7 +8518,11 @@ if (view === 'following') {
 }
 
   // Messages Inbox View
+// Messages Inbox View
 if (view === 'messages') {
+  // Calculate total unread count for badge
+  const totalUnreadCount = Object.values(unreadCounts).reduce((sum, count) => sum + count, 0);
+  
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm sticky top-0 z-50">
@@ -8360,60 +8535,122 @@ if (view === 'messages') {
             >
               <X className="w-6 h-6" />
             </button>
-            <h1 className="text-xl font-bold text-gray-900">Messages</h1>
+            <div className="flex-1">
+              <h1 className="text-xl font-bold text-gray-900">Messages</h1>
+              {totalUnreadCount > 0 && (
+                <p className="text-sm text-indigo-600 font-medium">
+                  {totalUnreadCount} unread {totalUnreadCount === 1 ? 'message' : 'messages'}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
       <div className="max-w-4xl mx-auto px-4 py-6">
-       {conversations.length === 0 ? (
-  <MessagesEmptyState onExploreEvents={() => setView('explore')} />
-) : (
-          <div className="space-y-3">
-            {conversations.map((conv) => (
-              <div
-                key={conv.other_user_id}
-                onClick={() => {
-                  setSelectedConversation({
-                    userId: conv.other_user_id,
-                    userName: conv.other_user_name
-                  });
-                  setView('dm-conversation');
-                  fetchDmConversation(conv.other_user_id);
-                  const interval = startDmPolling(conv.other_user_id);
-                  setPollingInterval(interval);
-                }}
-                className="bg-white rounded-2xl shadow-sm p-4 hover:shadow-xl transition-all cursor-pointer"
-              >
-                 <div className="flex items-center gap-3">
-      {conv.other_user_profile_picture ? (
-        <img 
-          src={conv.other_user_profile_picture} 
-          alt={conv.other_user_name}
-          className="w-12 h-12 rounded-full object-cover border-2 border-indigo-200"
-        />
-      ) : (
-        <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-          {conv.other_user_name?.charAt(0).toUpperCase() || '?'}
-        </div>
-      )}
-                  <div className="flex-1">
-                    <div className="font-semibold text-gray-900">{conv.other_user_name}</div>
-                    <div className="text-sm text-gray-500">
-                      {new Date(conv.last_message_time).toLocaleString()}
+        {conversations.length === 0 ? (
+          <MessagesEmptyState onExploreEvents={() => setView('explore')} />
+        ) : (
+          <div className="space-y-2">
+            {conversations.map((conv) => {
+              const unreadCount = unreadCounts[conv.other_user_id] || 0;
+              const isTyping = typingUsers[conv.other_user_id];
+              const isOnline = onlineUsers.has(conv.other_user_id);
+              
+              return (
+                <div
+                  key={conv.other_user_id}
+                  onClick={() => {
+                    setSelectedConversation({
+                      userId: conv.other_user_id,
+                      userName: conv.other_user_name,
+                      userProfilePicture: conv.other_user_profile_picture
+                    });
+                    setView('dm-conversation');
+                    fetchDmConversation(conv.other_user_id);
+                    const interval = startDmPolling(conv.other_user_id);
+                    setPollingInterval(interval);
+                  }}
+                  className={`bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-all cursor-pointer ${
+                    unreadCount > 0 ? 'border-2 border-indigo-200' : 'border border-gray-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    {/* Avatar with online indicator */}
+                    <div className="relative flex-shrink-0">
+                      {conv.other_user_profile_picture ? (
+                        <img 
+                          src={conv.other_user_profile_picture} 
+                          alt={conv.other_user_name}
+                          className="w-14 h-14 rounded-full object-cover border-2 border-gray-200"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg border-2 border-gray-200">
+                          {conv.other_user_name?.charAt(0).toUpperCase() || '?'}
+                        </div>
+                      )}
+                      <OnlineIndicator userId={conv.other_user_id} />
                     </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      {/* Name and timestamp */}
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`font-semibold ${unreadCount > 0 ? 'text-gray-900' : 'text-gray-700'}`}>
+                          {conv.other_user_name}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {formatMessageTime(conv.last_message_time)}
+                        </span>
+                      </div>
+                      
+                      {/* Last message preview or typing indicator */}
+                      <div className="flex items-center justify-between">
+                        {isTyping ? (
+                          <div className="flex items-center gap-1 text-sm text-indigo-600">
+                            <div className="flex gap-0.5">
+                              <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                              <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                              <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                            </div>
+                            <span className="italic">typing...</span>
+                          </div>
+                        ) : (
+                          <p className={`text-sm truncate ${unreadCount > 0 ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
+                            {conv.last_message || 'No messages yet'}
+                          </p>
+                        )}
+                        
+                        {/* Unread badge */}
+                        {unreadCount > 0 && (
+                          <div className="ml-2 flex-shrink-0">
+                            <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">
+                              <span className="text-xs font-bold text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Online status text */}
+                      {isOnline && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className="text-xs text-green-600 font-medium">Online</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
-                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
-{/* Bottom Navigation */}
+      {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
         <div className="max-w-screen-xl mx-auto px-4">
           <div className="flex items-center justify-around py-2">
@@ -8465,23 +8702,23 @@ if (view === 'messages') {
             </button>
 
             <button
-  onClick={() => setView('profile')}
-  className="flex flex-col items-center gap-1 px-4 py-2 text-gray-500"
->
-  {user?.profile_picture ? (
-    <img 
-      src={user.profile_picture} 
-      alt={user.name}
-      className="w-6 h-6 rounded-full object-cover border border-gray-300"
-    />
-  ) : (
-    <UserIcon className="w-6 h-6" />
-  )}
-  <span className="text-xs font-medium">Profile</span>
-</button>
+              onClick={() => setView('profile')}
+              className="flex flex-col items-center gap-1 px-4 py-2 text-gray-500"
+            >
+              {user?.profile_picture ? (
+                <img 
+                  src={user.profile_picture} 
+                  alt={user.name}
+                  className="w-6 h-6 rounded-full object-cover border border-gray-300"
+                />
+              ) : (
+                <UserIcon className="w-6 h-6" />
+              )}
+              <span className="text-xs font-medium">Profile</span>
+            </button>
           </div>
         </div>
-      </nav>    
+      </nav>
     </div>
   );
 }
@@ -8489,11 +8726,17 @@ if (view === 'messages') {
 
 
 // DM Conversation View
+// DM Conversation View
 if (view === 'dm-conversation' && selectedConversation) {
+  const isTyping = typingUsers[selectedConversation.userId];
+  const isOnline = onlineUsers.has(selectedConversation.userId);
+ 
+  
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Enhanced Header */}
+      <header className="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-200">
+        <div className="max-w-4xl mx-auto px-4 py-3">
           <div className="flex items-center gap-3">
             <ToastNotification />
             <button
@@ -8506,186 +8749,220 @@ if (view === 'dm-conversation' && selectedConversation) {
               }}
               className="p-2 hover:bg-gray-100 rounded-full transition-all"
             >
-              <X className="w-6 h-6" />
+              <ArrowLeft className="w-5 h-5" />
             </button>
-            {selectedConversation.userProfilePicture ? (
-  <img 
-    src={selectedConversation.userProfilePicture} 
-    alt={selectedConversation.userName}
-    className="w-10 h-10 rounded-full object-cover border-2 border-indigo-200"
-  />
-) : (
-  <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold">
-    {selectedConversation.userName?.charAt(0).toUpperCase() || '?'}
-  </div>
-)}
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">{selectedConversation.userName}</h1>
-              <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
-                <span className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></span>
-                Live
+            
+            {/* Clickable avatar and name for profile navigation */}
+            <div 
+              onClick={() => {
+                showInfoToast('Profile view coming soon!');
+              }}
+              className="flex items-center gap-3 flex-1 cursor-pointer hover:opacity-80 transition-opacity"
+            >
+              <div className="relative">
+                {selectedConversation.userProfilePicture ? (
+                  <img 
+                    src={selectedConversation.userProfilePicture} 
+                    alt={selectedConversation.userName}
+                    className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                  />
+                ) : (
+                  <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
+                    {selectedConversation.userName?.charAt(0).toUpperCase() || '?'}
+                  </div>
+                )}
+                <OnlineIndicator userId={selectedConversation.userId} />
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <h1 className="text-lg font-bold text-gray-900 truncate">
+                  {selectedConversation.userName}
+                </h1>
+                {isOnline ? (
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-xs text-green-600 font-medium">Online</span>
+                  </div>
+                ) : (
+                  <span className="text-xs text-gray-500">
+                    {lastSeenTimestamps[selectedConversation.userId] 
+                      ? `Last seen ${formatMessageTime(lastSeenTimestamps[selectedConversation.userId])}`
+                      : 'Offline'
+                    }
+                  </span>
+                )}
               </div>
             </div>
+            
+            {/* More options menu */}
+            <button
+              onClick={() => showInfoToast('More options coming soon!')}
+              className="p-2 hover:bg-gray-100 rounded-full transition-all"
+            >
+              <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+              </svg>
+            </button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-4 py-6 flex flex-col" style={{height: 'calc(100vh - 100px)'}}>
-        {/* Messages Container */}
-        <div className="flex-1 overflow-y-auto mb-4 space-y-3">
-          {loadingDms ? (
-            <div className="text-center py-12">
-              <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-            </div>
-          ) : dmMessages.length === 0 ? (
-            <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
-              <div className="text-6xl mb-4">💬</div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">No messages yet</h3>
-              <p className="text-gray-500">Start the conversation!</p>
-            </div>
-          ) : (
-            dmMessages.map((msg) => (
-              <div key={msg.id} className={`flex gap-3 ${msg.sender_id === user.id ? 'flex-row-reverse' : ''}`}>
-                {msg.sender_id === user?.id && user?.profile_picture ? (
-      <img 
-        src={user.profile_picture} 
-        alt={msg.sender_name}
-        className="w-10 h-10 rounded-full object-cover border-2 border-indigo-200 flex-shrink-0"
-      />
-    ) : msg.sender_profile_picture ? (
-      <img 
-        src={msg.sender_profile_picture} 
-        alt={msg.sender_name}
-        className="w-10 h-10 rounded-full object-cover border-2 border-blue-200 flex-shrink-0"
-      />
-    ) : (
-      <div className={`w-10 h-10 bg-gradient-to-br ${msg.sender_id === user.id ? 'from-indigo-600 to-indigo-500' : 'from-blue-600 to-teal-600'} rounded-full flex items-center justify-center text-white font-bold flex-shrink-0`}>
-        {msg.sender_name?.charAt(0).toUpperCase() || '?'}
-      </div>
-    )}
-                <div className={`flex-1 max-w-md ${msg.sender_id === user.id ? 'items-end' : ''}`}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-sm text-gray-900">{msg.sender_name}</span>
-                    <span className="text-xs text-gray-500">
-                      {new Date(msg.created_at).toLocaleTimeString()}
-                    </span>
-                    {msg.sender_id === user.id && (
-                      <button
-                        onClick={() => handleDeleteDm(msg.id, selectedConversation.userId)}
-                        className="text-red-600 hover:text-red-800 text-xs"
-                      >
-                        Delete
-                      </button>
+      {/* Messages Container */}
+      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
+        {loadingDms ? (
+          <div className="text-center py-12">
+            <LoadingSpinner size="lg" color="purple" />
+          </div>
+        ) : dmMessages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="text-6xl mb-4">💬</div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Start a conversation</h3>
+            <p className="text-gray-500">
+              Say hello to {selectedConversation.userName}!
+            </p>
+          </div>
+        ) : (
+          <>
+            {dmMessages.map((msg, index) => {
+              const isOwnMessage = msg.sender_id === user.id;
+              const prevMsg = index > 0 ? dmMessages[index - 1] : null;
+              const shouldGroup = shouldGroupMessage(msg, prevMsg);
+              const showTimestamp = !shouldGroup;
+              
+              return (
+                <div key={msg.id}>
+                  {/* Timestamp separator */}
+                  {showTimestamp && (
+                    <div className="flex justify-center my-4">
+                      <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                        {getRelativeTime(msg.created_at)}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Message bubble */}
+                  <div className={`flex gap-2 ${isOwnMessage ? 'flex-row-reverse' : ''} ${shouldGroup ? 'mt-1' : 'mt-3'}`}>
+                    {/* Avatar (only show for first message in group) */}
+                    {!shouldGroup && !isOwnMessage && (
+                      msg.sender_profile_picture ? (
+                        <img 
+                          src={msg.sender_profile_picture} 
+                          alt={msg.sender_name}
+                          className="w-8 h-8 rounded-full object-cover border-2 border-gray-200 flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                          {msg.sender_name?.charAt(0).toUpperCase() || '?'}
+                        </div>
+                      )
                     )}
+                    
+                    {/* Spacer for grouped messages */}
+                    {shouldGroup && !isOwnMessage && <div className="w-8 flex-shrink-0"></div>}
+                    
+                    <div className={`flex-1 max-w-[75%] ${isOwnMessage ? 'items-end' : 'items-start'} flex flex-col`}>
+                      {/* Message bubble */}
+                      <div
+                        className={`px-4 py-2 rounded-2xl break-words ${
+                          isOwnMessage
+                            ? 'bg-indigo-600 text-white rounded-br-sm'
+                            : 'bg-white border border-gray-200 text-gray-900 rounded-bl-sm'
+                        } ${shouldGroup ? (isOwnMessage ? 'rounded-tr-2xl' : 'rounded-tl-2xl') : ''}`}
+                      >
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+                      </div>
+                      
+                      {/* Read receipt (only for own messages, last in group) */}
+                      {isOwnMessage && (!dmMessages[index + 1] || !shouldGroupMessage(dmMessages[index + 1], msg)) && (
+                        <ReadReceipt message={msg} currentUserId={user.id} />
+                      )}
+                    </div>
                   </div>
-                  <div className={`${msg.sender_id === user.id ? 'bg-indigo-600 text-white' : 'bg-white'} rounded-2xl px-4 py-2 shadow-sm`}>
-                    <p className={`${msg.sender_id === user.id ? 'text-white' : 'text-gray-900'}`}>{msg.message}</p>
+                </div>
+              );
+            })}
+            
+            {/* Typing indicator */}
+            {isTyping && (
+              <div className="flex gap-2 mt-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                  {selectedConversation.userName?.charAt(0).toUpperCase()}
+                </div>
+                <div className="bg-white border border-gray-200 px-4 py-3 rounded-2xl rounded-bl-sm">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                   </div>
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            )}
+            
+            <div ref={messagesEndRef} />
+          </>
+        )}
+      </div>
 
-        {/* Message Input */}
-        <div className="bg-white rounded-2xl shadow-sm p-4 sticky bottom-0">
-          <div className="flex gap-3">
+      {/* Enhanced Message Input - Sticky */}
+      <div className="bg-white border-t border-gray-200 p-4 sticky bottom-0">
+        <div className="max-w-4xl mx-auto flex items-end gap-2">
+          {/* Media button */}
+          <button
+            onClick={() => showInfoToast('Media sharing coming soon!')}
+            className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-all flex-shrink-0 mb-1"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </button>
+          
+          {/* Input field */}
+          <div className="flex-1 bg-gray-100 rounded-2xl px-4 py-2 flex items-center gap-2">
             <input
               type="text"
               value={newDmMessage}
-              onChange={(e) => setNewDmMessage(e.target.value)}
+              onChange={(e) => {
+                setNewDmMessage(e.target.value);
+                handleTyping(selectedConversation.userId);
+              }}
               onKeyPress={(e) => {
-                if (e.key === 'Enter' && newDmMessage.trim()) {
+                if (e.key === 'Enter' && !e.shiftKey && newDmMessage.trim()) {
+                  e.preventDefault();
                   handleSendDm(selectedConversation.userId, selectedConversation.userName);
                 }
               }}
-              placeholder="Type a message..."
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="Message..."
+              className="flex-1 bg-transparent border-0 focus:outline-none text-gray-900 placeholder-gray-500"
             />
+            
+            {/* Emoji button */}
             <button
-              onClick={() => handleSendDm(selectedConversation.userId, selectedConversation.userName)}
-              disabled={!newDmMessage.trim()}
-              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold hover:shadow-sm transition-all disabled:opacity-50"
+              onClick={() => showInfoToast('Emoji picker coming soon!')}
+              className="text-gray-500 hover:text-gray-700 transition-colors flex-shrink-0"
             >
-              Send
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </button>
           </div>
+          
+          {/* Send button */}
+          <button
+            onClick={() => handleSendDm(selectedConversation.userId, selectedConversation.userName)}
+            disabled={!newDmMessage.trim()}
+            className={`p-3 rounded-full transition-all flex-shrink-0 mb-1 ${
+              newDmMessage.trim()
+                ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            <Send className="w-5 h-5" />
+          </button>
         </div>
       </div>
-
-{/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
-        <div className="max-w-screen-xl mx-auto px-4">
-          <div className="flex items-center justify-around py-2">
-            <button onClick={() => { setView('discover'); fetchFeedPosts(); }} className="flex flex-col items-center gap-1 px-4 py-2 text-gray-500">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-              <span className="text-xs font-medium">Feed</span>
-            </button>
-
-            <button
-              onClick={() => setView('explore')}
-              className="flex flex-col items-center gap-1 px-4 py-2 text-gray-500"
-            >
-              <Search className="w-6 h-6" />
-              <span className="text-xs font-medium">Explore</span>
-            </button>
-
-            <button
-              onClick={() => {
-                if (user) {
-                  setView('organizer');
-                } else {
-                  showInfoToast('Please login to create');
-                  setView('login');
-                }
-              }}
-              className="flex flex-col items-center gap-1 px-4 py-2 text-gray-900"
-            >
-              <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center -mt-6 shadow-sm">
-                <Plus className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-xs font-medium mt-1">Create</span>
-            </button>
-
-            <button
-              onClick={() => {
-                if (user) {
-                  setView('my-events');
-                } else {
-                  showInfoToast('Please login to view events');
-                  setView('login');
-                }
-              }}
-              className="flex flex-col items-center gap-1 px-4 py-2 text-gray-500"
-            >
-              <Calendar className="w-6 h-6" />
-              <span className="text-xs font-medium">Events</span>
-            </button>
-
-            <button
-  onClick={() => setView('profile')}
-  className="flex flex-col items-center gap-1 px-4 py-2 text-gray-500"
->
-  {user?.profile_picture ? (
-    <img 
-      src={user.profile_picture} 
-      alt={user.name}
-      className="w-6 h-6 rounded-full object-cover border border-gray-300"
-    />
-  ) : (
-    <UserIcon className="w-6 h-6" />
-  )}
-  <span className="text-xs font-medium">Profile</span>
-</button>
-          </div>
-        </div>
-      </nav>
     </div>
   );
 }
-
 // Notifications View
 if (view === 'notifications') {
   return (
