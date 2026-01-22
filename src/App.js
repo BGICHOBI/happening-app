@@ -1,3 +1,4 @@
+import API_URL from './config';
 import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, MapPin, Clock, Users, Heart, Share2, Search, Plus, TrendingUp, Music, Briefcase, Trophy, Palette, Menu, X, BarChart3, Eye, Trash2, Upload, LogOut, User as UserIcon, AlertCircle, MessageCircle, UserPlus, UserCheck, UserX, Send, Edit, EyeOff, ArrowLeft, Sparkles, Star, CheckCircle } from 'lucide-react';
 
@@ -938,7 +939,7 @@ useEffect(() => {
 
   const fetchCurrentUser = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/me', {
+      const response = await fetch('${API_URL}/api/auth/me', {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
@@ -979,7 +980,7 @@ useEffect(() => {
      //await new Promise(resolve => setTimeout(resolve, 2000));
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch('${API_URL}/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1050,7 +1051,7 @@ if (!confirmPassword) {
     setAuthError('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch('${API_URL}/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1101,7 +1102,7 @@ const handleForgotPassword = async (e) => {
   
   try {
     // TODO: Implement backend endpoint for password reset
-    const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
+    const response = await fetch('${API_URL}/api/auth/forgot-password', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1136,7 +1137,7 @@ const handleForgotPassword = async (e) => {
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/events');
+      const response = await fetch('${API_URL}/api/events');
       const data = await response.json();
       setEvents(data);
     } catch (error) {
@@ -1154,7 +1155,7 @@ const handleForgotPassword = async (e) => {
     formData.append('image', file);
     
     try {
-      const response = await fetch('http://localhost:5000/api/upload', {
+      const response = await fetch('${API_URL}/api/upload', {
         method: 'POST',
         body: formData
       });
@@ -1182,7 +1183,7 @@ const handleForgotPassword = async (e) => {
   formData.append('image', file);
   
   try {
-    const response = await fetch('http://localhost:5000/api/upload', {
+    const response = await fetch('${API_URL}/api/upload', {
       method: 'POST',
       body: formData
     });
@@ -1218,7 +1219,7 @@ const handleSaveProfile = (bio, interests) => {
   showSuccessToast('Profile updated successfully!');
   
   // TODO: You can add API call here to persist to backend
-  fetch('http://localhost:5000/api/user/profile', {
+  fetch('${API_URL}/api/user/profile', {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -1261,7 +1262,7 @@ const handleSaveProfile = (bio, interests) => {
   setEventFormErrors({});
 
   try {
-    const response = await fetch('http://localhost:5000/api/events', {
+    const response = await fetch('${API_URL}/api/events', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1313,7 +1314,7 @@ const handleDeleteEvent = async (eventId) => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/events/${eventId}`, {
+      const response = await fetch(`${API_URL}/api/events/${eventId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${authToken}`
@@ -1340,7 +1341,7 @@ const handleDeleteEvent = async (eventId) => {
   }
 
   try {
-    const response = await fetch('http://localhost:5000/api/rsvp', {
+    const response = await fetch('${API_URL}/api/rsvp', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1361,7 +1362,7 @@ const handleDeleteEvent = async (eventId) => {
 
 const fetchEventRSVPs = async (eventId) => {
   try {
-    const response = await fetch(`http://localhost:5000/api/rsvp/event/${eventId}/all`);
+    const response = await fetch(`${API_URL}/api/rsvp/event/${eventId}/all`);
     if (response.ok) {
       const data = await response.json();
       setEventRSVPs({...eventRSVPs, [eventId]: data});
@@ -1375,7 +1376,7 @@ const fetchUserRSVP = async (eventId) => {
   if (!authToken) return;
   
   try {
-    const response = await fetch(`http://localhost:5000/api/rsvp/event/${eventId}`, {
+    const response = await fetch(`${API_URL}/api/rsvp/event/${eventId}`, {
       headers: {
         'Authorization': `Bearer ${authToken}`
       }
@@ -1425,7 +1426,7 @@ const fetchPostsForEvent = async (eventId, showLoading = true) => {
     if (showLoading) {
       setLoadingPosts(true);
     }
-    const response = await fetch(`http://localhost:5000/api/posts/event/${eventId}`);
+    const response = await fetch(`${API_URL}/api/posts/event/${eventId}`);
     if (response.ok) {
       const data = await response.json();
       setPosts(data);
@@ -1452,7 +1453,7 @@ const handleReaction = async (postId, reaction) => {
   }
 
   try {
-    const response = await fetch('http://localhost:5000/api/reactions', {
+    const response = await fetch('${API_URL}/api/reactions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1471,7 +1472,7 @@ const handleReaction = async (postId, reaction) => {
 
 const fetchPostReactions = async (postId) => {
   try {
-    const response = await fetch(`http://localhost:5000/api/reactions/post/${postId}`);
+    const response = await fetch(`${API_URL}/api/reactions/post/${postId}`);
     if (response.ok) {
       const data = await response.json();
       setPostReactions(prev => ({...prev, [postId]: data}));
@@ -1493,7 +1494,7 @@ const handleAddComment = async (postId, comment, parentCommentId = null) => {
   }
 
   try {
-    const response = await fetch('http://localhost:5000/api/comments', {
+    const response = await fetch('${API_URL}/api/comments', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1513,7 +1514,7 @@ const handleAddComment = async (postId, comment, parentCommentId = null) => {
 
 const fetchPostComments = async (postId) => {
   try {
-    const response = await fetch(`http://localhost:5000/api/comments/post/${postId}`);
+    const response = await fetch(`${API_URL}/api/comments/post/${postId}`);
     if (response.ok) {
       const data = await response.json();
       setPostComments(prev => ({...prev, [postId]: data}));
@@ -1534,7 +1535,7 @@ const handleDeleteComment = async (commentId, postId) => {
   }
 
   try {
-    const response = await fetch(`http://localhost:5000/api/comments/${commentId}`, {
+    const response = await fetch(`${API_URL}/api/comments/${commentId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${authToken}`
@@ -1555,8 +1556,8 @@ const startPolling = (eventId) => {
     // Fetch from both sources during polling
     try {
       const [feedPostsResponse, eventPostsResponse] = await Promise.all([
-        fetch(`http://localhost:5000/api/feed-posts`),
-        fetch(`http://localhost:5000/api/posts/event/${eventId}`)
+        fetch(`${API_URL}/api/feed-posts`),
+        fetch(`${API_URL}/api/posts/event/${eventId}`)
       ]);
       
       let allPosts = [];
@@ -1741,7 +1742,7 @@ const fetchEventMessages = async (eventId, showLoading = true) => {
     if (showLoading) {
       setLoadingMessages(true);
     }
-    const response = await fetch(`http://localhost:5000/api/event-messages/event/${eventId}`);
+    const response = await fetch(`${API_URL}/api/event-messages/event/${eventId}`);
     if (response.ok) {
       const data = await response.json();
       setEventMessages(data);
@@ -1801,7 +1802,7 @@ const handleSendMessage = async (eventId) => {
   }
 
   try {
-    const response = await fetch('http://localhost:5000/api/event-messages', {
+    const response = await fetch('${API_URL}/api/event-messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1830,7 +1831,7 @@ const handleDeleteMessage = async (messageId, eventId) => {
   }
 
   try {
-    const response = await fetch(`http://localhost:5000/api/event-messages/${messageId}`, {
+    const response = await fetch(`${API_URL}/api/event-messages/${messageId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${authToken}`
@@ -1903,7 +1904,7 @@ const fetchConversations = async () => {
   if (!authToken) return;
   
   try {
-    const response = await fetch('http://localhost:5000/api/direct-messages/conversations', {
+    const response = await fetch('${API_URL}/api/direct-messages/conversations', {
       headers: {
         'Authorization': `Bearer ${authToken}`
       }
@@ -1932,7 +1933,7 @@ const fetchDmConversation = async (otherUserId, showLoading = true) => {
     if (showLoading) {
       setLoadingDms(true);
     }
-    const response = await fetch(`http://localhost:5000/api/direct-messages/conversation/${otherUserId}`, {
+    const response = await fetch(`${API_URL}/api/direct-messages/conversation/${otherUserId}`, {
       headers: {
         'Authorization': `Bearer ${authToken}`
       }
@@ -1958,7 +1959,7 @@ const markMessagesAsRead = async (otherUserId) => {
   if (!authToken) return;
   
   try {
-    await fetch(`http://localhost:5000/api/direct-messages/mark-read/${otherUserId}`, {
+    await fetch(`${API_URL}/api/direct-messages/mark-read/${otherUserId}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${authToken}`
@@ -2009,7 +2010,7 @@ const handleSendDm = async (receiverId, receiverName) => {
   }
 
   try {
-    const response = await fetch('http://localhost:5000/api/direct-messages', {
+    const response = await fetch('${API_URL}/api/direct-messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -2043,7 +2044,7 @@ const handleDeleteDm = async (messageId, otherUserId) => {
   }
 
   try {
-    const response = await fetch(`http://localhost:5000/api/direct-messages/${messageId}`, {
+    const response = await fetch(`${API_URL}/api/direct-messages/${messageId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${authToken}`
@@ -2075,7 +2076,7 @@ const handleFollow = async (followedType, followedId, followedName) => {
   }
 
   try {
-    const response = await fetch('http://localhost:5000/api/follows', {
+    const response = await fetch('${API_URL}/api/follows', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -2103,7 +2104,7 @@ const handleUnfollow = async (followedType, followedId) => {
   }
 
   try {
-    const response = await fetch('http://localhost:5000/api/follows/unfollow', {
+    const response = await fetch('${API_URL}/api/follows/unfollow', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -2125,7 +2126,7 @@ const checkIsFollowing = async (followedType, followedId) => {
   if (!authToken) return;
 
   try {
-    const response = await fetch(`http://localhost:5000/api/follows/check/${followedType}/${followedId}`, {
+    const response = await fetch(`${API_URL}/api/follows/check/${followedType}/${followedId}`, {
       headers: {
         'Authorization': `Bearer ${authToken}`
       }
@@ -2142,7 +2143,7 @@ const checkIsFollowing = async (followedType, followedId) => {
 
 const fetchFollowerCount = async (followedType, followedId) => {
   try {
-    const response = await fetch(`http://localhost:5000/api/follows/count/${followedType}/${followedId}`);
+    const response = await fetch(`${API_URL}/api/follows/count/${followedType}/${followedId}`);
     if (response.ok) {
       const data = await response.json();
       setFollowerCounts({...followerCounts, [`${followedType}-${followedId}`]: data.count});
@@ -2156,7 +2157,7 @@ const fetchUserFollowing = async () => {
   if (!authToken) return;
 
   try {
-    const response = await fetch('http://localhost:5000/api/follows/following', {
+    const response = await fetch('${API_URL}/api/follows/following', {
       headers: {
         'Authorization': `Bearer ${authToken}`
       }
@@ -2180,7 +2181,7 @@ const sendBuddyRequest = async (receiverId, receiverName) => {
   }
 
   try {
-    const response = await fetch('http://localhost:5000/api/buddy-requests/send', {
+    const response = await fetch('${API_URL}/api/buddy-requests/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -2205,7 +2206,7 @@ const acceptBuddyRequest = async (requestId) => {
   if (!authToken) return;
 
   try {
-    const response = await fetch(`http://localhost:5000/api/buddy-requests/accept/${requestId}`, {
+    const response = await fetch(`${API_URL}/api/buddy-requests/accept/${requestId}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${authToken}`
@@ -2225,7 +2226,7 @@ const declineBuddyRequest = async (requestId) => {
   if (!authToken) return;
 
   try {
-    const response = await fetch(`http://localhost:5000/api/buddy-requests/decline/${requestId}`, {
+    const response = await fetch(`${API_URL}/api/buddy-requests/decline/${requestId}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${authToken}`
@@ -2244,7 +2245,7 @@ const fetchPendingRequests = async () => {
   if (!authToken) return;
 
   try {
-    const response = await fetch('http://localhost:5000/api/buddy-requests/pending', {
+    const response = await fetch('${API_URL}/api/buddy-requests/pending', {
       headers: {
         'Authorization': `Bearer ${authToken}`
       }
@@ -2263,7 +2264,7 @@ const fetchBuddies = async () => {
   if (!authToken) return;
 
   try {
-    const response = await fetch('http://localhost:5000/api/buddy-requests/buddies', {
+    const response = await fetch('${API_URL}/api/buddy-requests/buddies', {
       headers: {
         'Authorization': `Bearer ${authToken}`
       }
@@ -2282,7 +2283,7 @@ const checkBuddyStatus = async (otherUserId) => {
   if (!authToken) return;
 
   try {
-    const response = await fetch(`http://localhost:5000/api/buddy-requests/status/${otherUserId}`, {
+    const response = await fetch(`${API_URL}/api/buddy-requests/status/${otherUserId}`, {
       headers: {
         'Authorization': `Bearer ${authToken}`
       }
@@ -2305,7 +2306,7 @@ const removeBuddy = async (requestId) => {
   }
 
   try {
-    const response = await fetch(`http://localhost:5000/api/buddy-requests/${requestId}`, {
+    const response = await fetch(`${API_URL}/api/buddy-requests/${requestId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${authToken}`
@@ -2326,10 +2327,10 @@ const removeBuddy = async (requestId) => {
 const fetchFeedPosts = async (phase = null) => {
   try {
     setLoadingFeed(true);
-    let url = 'http://localhost:5000/api/feed-posts';
+    let url = '${API_URL}/api/feed-posts';
     
     if (authToken) {
-      url = 'http://localhost:5000/api/feed-posts/personalized';
+      url = '${API_URL}/api/feed-posts/personalized';
     } else if (phase) {
       url += `?phase=${phase}`;
     }
@@ -2418,7 +2419,7 @@ const createFeedPost = async () => {
     
     console.log('📤 Creating post:', postData);
     
-    const response = await fetch('http://localhost:5000/api/feed-posts', {
+    const response = await fetch('${API_URL}/api/feed-posts', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -2473,7 +2474,7 @@ const deleteFeedPost = async (postId) => {
   }
 
   try {
-    const response = await fetch(`http://localhost:5000/api/feed-posts/${postId}`, {
+    const response = await fetch(`${API_URL}/api/feed-posts/${postId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${authToken}`
@@ -2496,7 +2497,7 @@ const handleFeedReaction = async (postId, reaction) => {
   }
 
   try {
-    const response = await fetch('http://localhost:5000/api/feed-interactions/reactions', {
+    const response = await fetch('${API_URL}/api/feed-interactions/reactions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -2515,7 +2516,7 @@ const handleFeedReaction = async (postId, reaction) => {
 
 const fetchFeedReactions = async (postId) => {
   try {
-    const response = await fetch(`http://localhost:5000/api/feed-interactions/reactions/${postId}`);
+    const response = await fetch(`${API_URL}/api/feed-interactions/reactions/${postId}`);
     if (response.ok) {
       const data = await response.json();
       setFeedReactions(prev => ({...prev, [postId]: data}));
@@ -2536,7 +2537,7 @@ const handleAddFeedComment = async (postId, parentCommentId = null) => {
   }
 
   try {
-    const response = await fetch('http://localhost:5000/api/feed-interactions/comments', {
+    const response = await fetch('${API_URL}/api/feed-interactions/comments', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -2557,7 +2558,7 @@ const handleAddFeedComment = async (postId, parentCommentId = null) => {
 
 const fetchFeedComments = async (postId) => {
   try {
-    const response = await fetch(`http://localhost:5000/api/feed-interactions/comments/${postId}`);
+    const response = await fetch(`${API_URL}/api/feed-interactions/comments/${postId}`);
     if (response.ok) {
       const data = await response.json();
       setFeedComments(prev => ({...prev, [postId]: data}));
@@ -2575,7 +2576,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
   }
 
   try {
-    const response = await fetch(`http://localhost:5000/api/feed-interactions/comments/${commentId}`, {
+    const response = await fetch(`${API_URL}/api/feed-interactions/comments/${commentId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${authToken}`
@@ -2799,7 +2800,7 @@ const getMutualBuddiesForEvent = async (eventId) => {
   if (!authToken || !user) return [];
   
   try {
-    const response = await fetch(`http://localhost:5000/api/events/${eventId}/mutual-buddies`, {
+    const response = await fetch(`${API_URL}/api/events/${eventId}/mutual-buddies`, {
       headers: {
         'Authorization': `Bearer ${authToken}`
       }
@@ -2821,7 +2822,7 @@ const fetchAllBuddies = async () => {
   if (!authToken || buddies.length > 0) return;
   
   try {
-    const response = await fetch('http://localhost:5000/api/buddies', {
+    const response = await fetch('${API_URL}/api/buddies', {
       headers: {
         'Authorization': `Bearer ${authToken}`
       }
@@ -5561,7 +5562,7 @@ if (view === 'discover') {
                           formData.append('image', file);
                           
                           try {
-                            const response = await fetch('http://localhost:5000/api/upload', {
+                            const response = await fetch('${API_URL}/api/upload', {
                               method: 'POST',
                               body: formData
                             });
@@ -5666,7 +5667,7 @@ if (view === 'discover') {
                     
                     console.log('📤 Sending to backend:', postData);
                     
-                    const response = await fetch('http://localhost:5000/api/feed-posts', {
+                    const response = await fetch('${API_URL}/api/feed-posts', {
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',
@@ -6108,8 +6109,8 @@ if (view === 'event-detail' && selectedEvent) {
     // Fetch posts from both sources
     try {
       const [feedPostsResponse, eventPostsResponse] = await Promise.all([
-        fetch(`http://localhost:5000/api/feed-posts`),
-        fetch(`http://localhost:5000/api/posts/event/${selectedEvent.id}`)
+        fetch(`${API_URL}/api/feed-posts`),
+        fetch(`${API_URL}/api/posts/event/${selectedEvent.id}`)
       ]);
       
       let allPosts = [];
@@ -9429,7 +9430,7 @@ if (view === 'event-feed' && selectedEvent) {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/posts', {
+      const response = await fetch('${API_URL}/api/posts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -9448,8 +9449,8 @@ if (view === 'event-feed' && selectedEvent) {
         // Refresh posts after action
 try {
   const [feedPostsResponse, eventPostsResponse] = await Promise.all([
-    fetch(`http://localhost:5000/api/feed-posts`),
-    fetch(`http://localhost:5000/api/posts/event/${selectedEvent.id}`)
+    fetch(`${API_URL}/api/feed-posts`),
+    fetch(`${API_URL}/api/posts/event/${selectedEvent.id}`)
   ]);
   
   let allPosts = [];
@@ -9493,7 +9494,7 @@ try {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/posts/${postId}`, {
+      const response = await fetch(`${API_URL}/api/posts/${postId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${authToken}`
@@ -9504,8 +9505,8 @@ try {
         // Refresh posts after action
 try {
   const [feedPostsResponse, eventPostsResponse] = await Promise.all([
-    fetch(`http://localhost:5000/api/feed-posts`),
-    fetch(`http://localhost:5000/api/posts/event/${selectedEvent.id}`)
+    fetch(`${API_URL}/api/feed-posts`),
+    fetch(`${API_URL}/api/posts/event/${selectedEvent.id}`)
   ]);
   
   let allPosts = [];
@@ -9549,7 +9550,7 @@ try {
     formData.append('image', file);
 
     try {
-      const response = await fetch('http://localhost:5000/api/upload', {
+      const response = await fetch('${API_URL}/api/upload', {
         method: 'POST',
         body: formData
       });
@@ -9580,7 +9581,7 @@ try {
     formData.append('video', file);
 
     try {
-      const response = await fetch('http://localhost:5000/api/upload/video', {
+      const response = await fetch('${API_URL}/api/upload/video', {
         method: 'POST',
         body: formData
       });
