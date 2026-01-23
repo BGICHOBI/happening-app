@@ -939,7 +939,7 @@ useEffect(() => {
 
   const fetchCurrentUser = async () => {
     try {
-      const response = await fetch('${API_URL}/api/auth/me', {
+      const response = await fetch(`${API_URL}/api/auth/me`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
@@ -959,6 +959,8 @@ useEffect(() => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+      console.log(API_URL)
+
   // Validate before submitting
   let errors = {};
   if (!authForm.email) {
@@ -980,7 +982,7 @@ useEffect(() => {
      //await new Promise(resolve => setTimeout(resolve, 2000));
 
     try {
-      const response = await fetch('${API_URL}/api/auth/login', {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1012,6 +1014,7 @@ useEffect(() => {
 
     const handleSignup = async (e) => {
   e.preventDefault();
+
   
   // Validate before submitting
   let errors = {};
@@ -1051,7 +1054,7 @@ if (!confirmPassword) {
     setAuthError('');
 
     try {
-      const response = await fetch('${API_URL}/api/auth/register', {
+      const response = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1102,7 +1105,7 @@ const handleForgotPassword = async (e) => {
   
   try {
     // TODO: Implement backend endpoint for password reset
-    const response = await fetch('${API_URL}/api/auth/forgot-password', {
+    const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1137,7 +1140,7 @@ const handleForgotPassword = async (e) => {
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const response = await fetch('${API_URL}/api/events');
+      const response = await fetch(`${API_URL}/api/events`);
       const data = await response.json();
       setEvents(data);
     } catch (error) {
@@ -1155,7 +1158,7 @@ const handleForgotPassword = async (e) => {
     formData.append('image', file);
     
     try {
-      const response = await fetch('${API_URL}/api/upload', {
+      const response = await fetch(`${API_URL}/api/upload`, {
         method: 'POST',
         body: formData
       });
@@ -1183,7 +1186,7 @@ const handleForgotPassword = async (e) => {
   formData.append('image', file);
   
   try {
-    const response = await fetch('${API_URL}/api/upload', {
+    const response = await fetch(`${API_URL}/api/upload`, {
       method: 'POST',
       body: formData
     });
@@ -1219,7 +1222,7 @@ const handleSaveProfile = (bio, interests) => {
   showSuccessToast('Profile updated successfully!');
   
   // TODO: You can add API call here to persist to backend
-  fetch('${API_URL}/api/user/profile', {
+  fetch(`${API_URL}/api/user/profile`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -1262,7 +1265,7 @@ const handleSaveProfile = (bio, interests) => {
   setEventFormErrors({});
 
   try {
-    const response = await fetch('${API_URL}/api/events', {
+    const response = await fetch(`${API_URL}/api/events`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1341,7 +1344,7 @@ const handleDeleteEvent = async (eventId) => {
   }
 
   try {
-    const response = await fetch('${API_URL}/api/rsvp', {
+    const response = await fetch(`${API_URL}/api/rsvp`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1453,7 +1456,7 @@ const handleReaction = async (postId, reaction) => {
   }
 
   try {
-    const response = await fetch('${API_URL}/api/reactions', {
+    const response = await fetch(`${API_URL}/api/reactions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1494,7 +1497,7 @@ const handleAddComment = async (postId, comment, parentCommentId = null) => {
   }
 
   try {
-    const response = await fetch('${API_URL}/api/comments', {
+    const response = await fetch(`${API_URL}/api/comments`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1802,7 +1805,7 @@ const handleSendMessage = async (eventId) => {
   }
 
   try {
-    const response = await fetch('${API_URL}/api/event-messages', {
+    const response = await fetch(`${API_URL}/api/event-messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1904,7 +1907,7 @@ const fetchConversations = async () => {
   if (!authToken) return;
   
   try {
-    const response = await fetch('${API_URL}/api/direct-messages/conversations', {
+    const response = await fetch(`${API_URL}/api/direct-messages/conversations`, {
       headers: {
         'Authorization': `Bearer ${authToken}`
       }
@@ -2010,7 +2013,7 @@ const handleSendDm = async (receiverId, receiverName) => {
   }
 
   try {
-    const response = await fetch('${API_URL}/api/direct-messages', {
+    const response = await fetch(`${API_URL}/api/direct-messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -2076,7 +2079,7 @@ const handleFollow = async (followedType, followedId, followedName) => {
   }
 
   try {
-    const response = await fetch('${API_URL}/api/follows', {
+    const response = await fetch(`${API_URL}/api/follows`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -2104,7 +2107,7 @@ const handleUnfollow = async (followedType, followedId) => {
   }
 
   try {
-    const response = await fetch('${API_URL}/api/follows/unfollow', {
+    const response = await fetch(`${API_URL}/api/follows/unfollow`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -2157,7 +2160,7 @@ const fetchUserFollowing = async () => {
   if (!authToken) return;
 
   try {
-    const response = await fetch('${API_URL}/api/follows/following', {
+    const response = await fetch(`${API_URL}/api/follows/following`, {
       headers: {
         'Authorization': `Bearer ${authToken}`
       }
@@ -2181,7 +2184,7 @@ const sendBuddyRequest = async (receiverId, receiverName) => {
   }
 
   try {
-    const response = await fetch('${API_URL}/api/buddy-requests/send', {
+    const response = await fetch(`${API_URL}/api/buddy-requests/send`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -2245,7 +2248,7 @@ const fetchPendingRequests = async () => {
   if (!authToken) return;
 
   try {
-    const response = await fetch('${API_URL}/api/buddy-requests/pending', {
+    const response = await fetch(`${API_URL}/api/buddy-requests/pending`, {
       headers: {
         'Authorization': `Bearer ${authToken}`
       }
@@ -2264,7 +2267,7 @@ const fetchBuddies = async () => {
   if (!authToken) return;
 
   try {
-    const response = await fetch('${API_URL}/api/buddy-requests/buddies', {
+    const response = await fetch(`${API_URL}/api/buddy-requests/buddies`, {
       headers: {
         'Authorization': `Bearer ${authToken}`
       }
@@ -2327,10 +2330,10 @@ const removeBuddy = async (requestId) => {
 const fetchFeedPosts = async (phase = null) => {
   try {
     setLoadingFeed(true);
-    let url = '${API_URL}/api/feed-posts';
+    let url = `${API_URL}/api/feed-posts`;
     
     if (authToken) {
-      url = '${API_URL}/api/feed-posts/personalized';
+      url = `${API_URL}/api/feed-posts/personalized`;
     } else if (phase) {
       url += `?phase=${phase}`;
     }
@@ -2419,7 +2422,7 @@ const createFeedPost = async () => {
     
     console.log('📤 Creating post:', postData);
     
-    const response = await fetch('${API_URL}/api/feed-posts', {
+    const response = await fetch(`${API_URL}/api/feed-posts`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -2497,7 +2500,7 @@ const handleFeedReaction = async (postId, reaction) => {
   }
 
   try {
-    const response = await fetch('${API_URL}/api/feed-interactions/reactions', {
+    const response = await fetch(`${API_URL}/api/feed-interactions/reactions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -2537,7 +2540,7 @@ const handleAddFeedComment = async (postId, parentCommentId = null) => {
   }
 
   try {
-    const response = await fetch('${API_URL}/api/feed-interactions/comments', {
+    const response = await fetch(`${API_URL}/api/feed-interactions/comments`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -2822,7 +2825,7 @@ const fetchAllBuddies = async () => {
   if (!authToken || buddies.length > 0) return;
   
   try {
-    const response = await fetch('${API_URL}/api/buddies', {
+    const response = await fetch(`${API_URL}/api/buddies`, {
       headers: {
         'Authorization': `Bearer ${authToken}`
       }
@@ -5562,7 +5565,7 @@ if (view === 'discover') {
                           formData.append('image', file);
                           
                           try {
-                            const response = await fetch('${API_URL}/api/upload', {
+                            const response = await fetch(`${API_URL}/api/upload`, {
                               method: 'POST',
                               body: formData
                             });
@@ -5667,7 +5670,7 @@ if (view === 'discover') {
                     
                     console.log('📤 Sending to backend:', postData);
                     
-                    const response = await fetch('${API_URL}/api/feed-posts', {
+                    const response = await fetch(`${API_URL}/api/feed-posts`, {
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',
@@ -9430,7 +9433,7 @@ if (view === 'event-feed' && selectedEvent) {
     }
 
     try {
-      const response = await fetch('${API_URL}/api/posts', {
+      const response = await fetch(`${API_URL}/api/posts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -9550,7 +9553,7 @@ try {
     formData.append('image', file);
 
     try {
-      const response = await fetch('${API_URL}/api/upload', {
+      const response = await fetch(`${API_URL}/api/upload`, {
         method: 'POST',
         body: formData
       });
@@ -9581,7 +9584,7 @@ try {
     formData.append('video', file);
 
     try {
-      const response = await fetch('${API_URL}/api/upload/video', {
+      const response = await fetch(`${API_URL}/api/upload/video`, {
         method: 'POST',
         body: formData
       });
