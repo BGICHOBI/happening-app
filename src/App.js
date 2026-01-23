@@ -1226,7 +1226,7 @@ const handleSaveProfile = (bio, interests) => {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${authToken}`
+      'Authorization': `Bearer ${authToken}`,
     },
     body: JSON.stringify({ bio, interests })
   });
@@ -3940,7 +3940,7 @@ const DiscoverySection = ({ title, icon, events: discoveryEvents, emptyText }) =
                         key={idx}
                         className="w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-xs border-2 border-white"
                       >
-                        {buddy.user_name?.charAt(0).toUpperCase()}
+                        {buddy.user_name?.charAt(0).toUpperCase() || '?'}
                       </div>
                     ))}
                   </div>
@@ -4768,7 +4768,7 @@ if (view === 'discover') {
     />
   ) : (
     <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold">
-      {user.name.charAt(0).toUpperCase()}
+      {user.name.charAt(0).toUpperCase() || '?'}
     </div>
   )}
                     <span className="text-gray-500 flex-1">What's happening at your event?</span>
@@ -4906,7 +4906,7 @@ if (view === 'discover') {
       />
     ) : (
       <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold hover:bg-gray-300 transition-all">
-        {post.user_name.charAt(0).toUpperCase()}
+        {post.user_name.charAt(0).toUpperCase() || '?'}
       </div>
     )}
   </div>
@@ -5432,7 +5432,7 @@ if (view === 'discover') {
     />
   ) : (
     <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold">
-      {user.name.charAt(0).toUpperCase()}
+      {user.name.charAt(0).toUpperCase() || '?'}
     </div>
   )}
                 <div>
@@ -6614,7 +6614,7 @@ sortedEvents.sort((a, b) => {
           
           {activeFilters.categories.map(cat => (
             <div key={cat} className="inline-flex items-center gap-2 bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full text-sm font-semibold">
-              <span>{cat.charAt(0).toUpperCase() + cat.slice(1)}</span>
+              <span>{cat.charAt(0).toUpperCase() + cat.slice(1)|| '?'}</span>
               <button
                 onClick={() => setActiveFilters({
                   ...activeFilters,
@@ -8338,7 +8338,7 @@ if (view === 'buddies') {
                           />
                         ) : (
                           <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                            {buddy.buddy_name.charAt(0).toUpperCase()}
+                            {buddy.buddy_name.charAt(0).toUpperCase()|| '?'}
                           </div>
                         )}
                         {/* Online indicator */}
@@ -8485,7 +8485,7 @@ if (view === 'buddies') {
                       />
                     ) : (
                       <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                        {suggestion.user_name.charAt(0).toUpperCase()}
+                        {suggestion.user_name.charAt(0).toUpperCase()|| '?'}
                       </div>
                     )}
                     
@@ -8541,7 +8541,7 @@ if (view === 'buddies') {
                       />
                     ) : (
                       <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                        {request.sender_name.charAt(0).toUpperCase()}
+                        {request.sender_name.charAt(0).toUpperCase()|| '?'}
                       </div>
                     )}
                     <div className="flex-1">
@@ -8678,7 +8678,7 @@ if (view === 'following') {
               {followingOrganizers.map((follow) => (
                 <div key={follow.id} className="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-4">
                   <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                    {follow.followed_name.charAt(0).toUpperCase()}
+                    {follow.followed_name.charAt(0).toUpperCase()|| '?'}
                   </div>
                   <div className="flex-1">
                     <h3 className="font-bold text-gray-900">{follow.followed_name}</h3>
@@ -9140,7 +9140,7 @@ if (view === 'dm-conversation' && selectedConversation) {
             {isTyping && (
               <div className="flex gap-2 mt-3">
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
-                  {selectedConversation.userName?.charAt(0).toUpperCase()}
+                  {selectedConversation.userName?.charAt(0).toUpperCase()|| '?'}
                 </div>
                 <div className="bg-white border border-gray-200 px-4 py-3 rounded-2xl rounded-bl-sm">
                   <div className="flex gap-1">
