@@ -4,8 +4,6 @@
   "devCommand": "npm start",
   "installCommand": "npm install",
   "framework": "create-react-app",
-  "regions": ["iad1"],
-  "env": {
-    "REACT_APP_API_URL": "@react_app_api_url"
-  }
+  "regions": ["iad1"]
+ 
 }
