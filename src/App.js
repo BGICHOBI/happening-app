@@ -327,11 +327,10 @@ function App() {
               <button
                 key={t.id}
                 onClick={() => setActiveStatsTab(t.id)}
-                className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all ${
-                  tab === t.id
-                    ? "bg-indigo-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
+                className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all ${tab === t.id
+                  ? "bg-indigo-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
               >
                 <span className="mr-1">{t.icon}</span>
                 {t.count}
@@ -625,11 +624,10 @@ function App() {
                         key={interest.id}
                         onClick={() => !isSelected && addInterest(interest)}
                         disabled={isSelected || localInterests.length >= 10}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${
-                          isSelected
-                            ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                            : "bg-white border-2 border-gray-200 text-gray-700 hover:border-indigo-500 hover:text-indigo-600"
-                        }`}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${isSelected
+                          ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                          : "bg-white border-2 border-gray-200 text-gray-700 hover:border-indigo-500 hover:text-indigo-600"
+                          }`}
                       >
                         <span>{interest.icon}</span>
                         <span>{interest.name}</span>
@@ -911,11 +909,10 @@ function App() {
               <button
                 key={idx}
                 onClick={action.primary ? onCreateEvent : onExplore}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
-                  action.primary
-                    ? "bg-indigo-600 hover:bg-indigo-700 text-white"
-                    : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                }`}
+                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${action.primary
+                  ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+                  : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                  }`}
               >
                 <span className="text-xl">{action.icon}</span>
                 {action.text}
@@ -3537,11 +3534,10 @@ function App() {
                     onClick={() =>
                       setTempFilters({ ...tempFilters, dateRange: range.id })
                     }
-                    className={`p-3 rounded-xl border-2 transition-all text-left ${
-                      tempFilters.dateRange === range.id
-                        ? "border-indigo-600 bg-indigo-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
+                    className={`p-3 rounded-xl border-2 transition-all text-left ${tempFilters.dateRange === range.id
+                      ? "border-indigo-600 bg-indigo-50"
+                      : "border-gray-200 hover:border-gray-300"
+                      }`}
                   >
                     <div className="text-2xl mb-1">{range.icon}</div>
                     <div className="text-sm font-semibold text-gray-900">
@@ -3562,11 +3558,10 @@ function App() {
                     onClick={() =>
                       setTempFilters({ ...tempFilters, priceRange: range.id })
                     }
-                    className={`p-3 rounded-xl border-2 transition-all text-left ${
-                      tempFilters.priceRange === range.id
-                        ? "border-indigo-600 bg-indigo-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
+                    className={`p-3 rounded-xl border-2 transition-all text-left ${tempFilters.priceRange === range.id
+                      ? "border-indigo-600 bg-indigo-50"
+                      : "border-gray-200 hover:border-gray-300"
+                      }`}
                   >
                     <div className="text-2xl mb-1">{range.icon}</div>
                     <div className="text-xs font-semibold text-gray-900">
@@ -3585,11 +3580,10 @@ function App() {
                   <button
                     key={cat.id}
                     onClick={() => handleCategoryToggle(cat.id)}
-                    className={`px-4 py-2 rounded-full border-2 transition-all flex items-center gap-2 ${
-                      tempFilters.categories.includes(cat.id)
-                        ? "border-indigo-600 bg-indigo-50 text-indigo-700"
-                        : "border-gray-200 text-gray-700 hover:border-gray-300"
-                    }`}
+                    className={`px-4 py-2 rounded-full border-2 transition-all flex items-center gap-2 ${tempFilters.categories.includes(cat.id)
+                      ? "border-indigo-600 bg-indigo-50 text-indigo-700"
+                      : "border-gray-200 text-gray-700 hover:border-gray-300"
+                      }`}
                   >
                     <span>{cat.icon}</span>
                     <span className="text-sm font-semibold">{cat.name}</span>
@@ -3611,11 +3605,10 @@ function App() {
                     onClick={() =>
                       setTempFilters({ ...tempFilters, distance: dist.id })
                     }
-                    className={`p-3 rounded-xl border-2 transition-all text-left ${
-                      tempFilters.distance === dist.id
-                        ? "border-indigo-600 bg-indigo-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
+                    className={`p-3 rounded-xl border-2 transition-all text-left ${tempFilters.distance === dist.id
+                      ? "border-indigo-600 bg-indigo-50"
+                      : "border-gray-200 hover:border-gray-300"
+                      }`}
                   >
                     <div className="text-2xl mb-1">{dist.icon}</div>
                     <div className="text-xs font-semibold text-gray-900">
@@ -3731,7 +3724,7 @@ function App() {
               className="flex items-center gap-2 bg-white px-3 py-2 rounded-full border border-purple-200"
             >
               <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-            
+
                 {getInitial(buddy.user_name)}
               </div>
               <span className="text-sm font-semibold text-gray-900">
@@ -3799,7 +3792,7 @@ function App() {
                   >
                     <div className="flex items-start gap-3">
                       <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
-                   
+
                         {getInitial(activity.user_name)}
                       </div>
                       <div className="flex-1">
@@ -3809,13 +3802,12 @@ function App() {
                           </span>
                           <span className="text-gray-600"> is </span>
                           <span
-                            className={`font-bold ${
-                              activity.rsvp_status === "going"
-                                ? "text-green-600"
-                                : activity.rsvp_status === "maybe"
-                                  ? "text-yellow-600"
-                                  : "text-gray-600"
-                            }`}
+                            className={`font-bold ${activity.rsvp_status === "going"
+                              ? "text-green-600"
+                              : activity.rsvp_status === "maybe"
+                                ? "text-yellow-600"
+                                : "text-gray-600"
+                              }`}
                           >
                             {activity.rsvp_status === "going"
                               ? "going"
@@ -4267,8 +4259,8 @@ function App() {
                               key={idx}
                               className="w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-xs border-2 border-white"
                             >
-                            
-                              {getInitial(buddy.user_name )}
+
+                              {getInitial(buddy.user_name)}
                             </div>
                           ))}
                       </div>
@@ -5181,24 +5173,22 @@ function App() {
                       setFeedFilter("all");
                       fetchFeedPosts();
                     }}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
-                      feedFilter === "all"
-                        ? "bg-gray-900 text-white"
-                        : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
-                    }`}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${feedFilter === "all"
+                      ? "bg-gray-900 text-white"
+                      : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
+                      }`}
                   >
-                    🌟 For You
+                    For You
                   </button>
                   <button
                     onClick={() => {
                       setFeedFilter("live");
                       fetchFeedPosts("live");
                     }}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
-                      feedFilter === "live"
-                        ? "bg-gray-900 text-white"
-                        : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
-                    }`}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${feedFilter === "live"
+                      ? "bg-gray-900 text-white"
+                      : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
+                      }`}
                   >
                     🔴 Live Now
                   </button>
@@ -5208,26 +5198,24 @@ function App() {
                       setFeedFilter("upcoming");
                       fetchFeedPosts("upcoming");
                     }}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
-                      feedFilter === "upcoming"
-                        ? "bg-gray-900 text-white"
-                        : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
-                    }`}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${feedFilter === "upcoming"
+                      ? "bg-gray-900 text-white"
+                      : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
+                      }`}
                   >
-                    📅 Upcoming
+                    Upcoming
                   </button>
                   <button
                     onClick={() => {
                       setFeedFilter("past");
                       fetchFeedPosts("past");
                     }}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
-                      feedFilter === "past"
-                        ? "bg-gray-900 text-white"
-                        : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
-                    }`}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${feedFilter === "past"
+                      ? "bg-gray-900 text-white"
+                      : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
+                      }`}
                   >
-                    💭 Memories
+                    Memories
                   </button>
                 </div>
               </div>
@@ -5250,7 +5238,7 @@ function App() {
                         />
                       ) : (
                         <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold">
-                          
+
                           {getInitial(user.name)}
                         </div>
                       )}
@@ -5417,7 +5405,7 @@ function App() {
                             className="cursor-pointer flex-shrink-0"
                           >
                             {post.user_id === user?.id &&
-                            user?.profile_picture ? (
+                              user?.profile_picture ? (
                               <img
                                 src={user.profile_picture}
                                 alt={post.user_name}
@@ -5425,7 +5413,7 @@ function App() {
                               />
                             ) : (
                               <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold hover:bg-gray-300 transition-all">
-                                
+
                                 {getInitial(post.user_name)}
                               </div>
                             )}
@@ -5781,22 +5769,20 @@ function App() {
                                       fetchFeedReactions(post.id);
                                     }
                                   }}
-                                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all ${
-                                    feedReactions[post.id]?.like?.some(
-                                      (r) => r.user_name === user?.name,
-                                    )
-                                      ? "bg-red-50 text-red-600"
-                                      : "hover:bg-gray-50 text-gray-700"
-                                  }`}
+                                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all ${feedReactions[post.id]?.like?.some(
+                                    (r) => r.user_name === user?.name,
+                                  )
+                                    ? "bg-red-50 text-red-600"
+                                    : "hover:bg-gray-50 text-gray-700"
+                                    }`}
                                 >
                                   <Heart
-                                    className={`w-5 h-5 ${
-                                      feedReactions[post.id]?.like?.some(
-                                        (r) => r.user_name === user?.name,
-                                      )
-                                        ? "fill-red-500 text-red-500"
-                                        : ""
-                                    }`}
+                                    className={`w-5 h-5 ${feedReactions[post.id]?.like?.some(
+                                      (r) => r.user_name === user?.name,
+                                    )
+                                      ? "fill-red-500 text-red-500"
+                                      : ""
+                                      }`}
                                   />
                                   <span className="text-sm font-semibold">
                                     {feedReactions[post.id]?.like?.length > 0
@@ -5834,18 +5820,17 @@ function App() {
                                       fetchFeedReactions(post.id);
                                     }
                                   }}
-                                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all ${
-                                    feedReactions[post.id]?.recommend?.some(
-                                      (r) => r.user_name === user?.name,
-                                    )
-                                      ? "bg-indigo-50 text-indigo-600"
-                                      : "hover:bg-gray-50 text-gray-700"
-                                  }`}
+                                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all ${feedReactions[post.id]?.recommend?.some(
+                                    (r) => r.user_name === user?.name,
+                                  )
+                                    ? "bg-indigo-50 text-indigo-600"
+                                    : "hover:bg-gray-50 text-gray-700"
+                                    }`}
                                 >
                                   <Share2 className="w-5 h-5" />
                                   <span className="text-sm font-semibold">
                                     {feedReactions[post.id]?.recommend?.length >
-                                    0
+                                      0
                                       ? `Share · ${feedReactions[post.id].recommend.length}`
                                       : "Share"}
                                   </span>
@@ -5929,7 +5914,7 @@ function App() {
                                 {/* Parent Comment */}
                                 <div className="flex gap-2">
                                   <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">
-                              
+
                                     {getInitial(comment.user_name)}
                                   </div>
                                   <div className="flex-1 bg-gray-50 rounded-lg p-2">
@@ -6007,7 +5992,7 @@ function App() {
                                     className="ml-10 mt-2 flex gap-2"
                                   >
                                     <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">
-                                  
+
                                       {getInitial(reply.user_name)}
                                     </div>
                                     <div className="flex-1 bg-white rounded-lg p-2 border border-gray-200">
@@ -6093,8 +6078,8 @@ function App() {
                     />
                   ) : (
                     <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold">
-      
-                  {getInitial(user?.name)}
+
+                      {getInitial(user?.name)}
 
                     </div>
                   )}
@@ -6114,6 +6099,29 @@ function App() {
                   className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none text-lg"
                   rows="4"
                 />
+
+                {/* Media Preview */}
+                {newFeedPost.mediaUrl && (
+                  <div className="mt-3 relative">
+                    <img
+                      src={newFeedPost.mediaUrl}
+                      alt="Preview"
+                      className="w-full h-48 object-cover rounded-lg"
+                    />
+                    <button
+                      onClick={() =>
+                        setNewFeedPost({
+                          ...newFeedPost,
+                          mediaUrl: "",
+                          postType: "text",
+                        })
+                      }
+                      className="absolute top-2 right-2 p-1 bg-black/50 hover:bg-black/70 rounded-full text-white transition-all"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
 
                 {/* Event Selector with Search */}
                 {postComposerEvent ? (
@@ -6164,11 +6172,9 @@ function App() {
                         .filter((e) => {
                           const query = (eventSearchQuery || "").toLowerCase();
                           return (
-                            (e.organizer_id === user.id ||
-                              (e.date && new Date(e.date) >= new Date())) &&
-                            (e.title.toLowerCase().includes(query) ||
-                              e.location?.toLowerCase().includes(query) ||
-                              e.category?.toLowerCase().includes(query))
+                            e.title.toLowerCase().includes(query) ||
+                            e.location?.toLowerCase().includes(query) ||
+                            e.category?.toLowerCase().includes(query)
                           );
                         })
                         .map((event) => (
@@ -6213,17 +6219,15 @@ function App() {
                       {events.filter((e) => {
                         const query = (eventSearchQuery || "").toLowerCase();
                         return (
-                          (e.organizer_id === user.id ||
-                            (e.date && new Date(e.date) >= new Date())) &&
-                          (e.title.toLowerCase().includes(query) ||
-                            e.location?.toLowerCase().includes(query) ||
-                            e.category?.toLowerCase().includes(query))
+                          e.title.toLowerCase().includes(query) ||
+                          e.location?.toLowerCase().includes(query) ||
+                          e.category?.toLowerCase().includes(query)
                         );
                       }).length === 0 && (
-                        <div className="p-6 text-center text-gray-500">
-                          <p>No events found</p>
-                        </div>
-                      )}
+                          <div className="p-6 text-center text-gray-500">
+                            <p>No events found</p>
+                          </div>
+                        )}
                     </div>
                   </div>
                 )}
@@ -6590,8 +6594,8 @@ function App() {
                       <div className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full font-bold">
                         <span>
                           {selectedEvent.privacy === "private"
-                            ? "🔒 Private"
-                            : "📨 Invite Only"}
+                            ? "Private"
+                            : "Invite Only"}
                         </span>
                       </div>
                     )}
@@ -6630,11 +6634,10 @@ function App() {
                           );
                         }
                       }}
-                      className={`${
-                        isFollowing[`organizer-${selectedEvent.organizer_id}`]
-                          ? "bg-white text-gray-900"
-                          : "bg-white/20 backdrop-blur-sm text-white hover:bg-white/30"
-                      } px-3 py-1.5 rounded-full text-sm font-semibold transition-all`}
+                      className={`${isFollowing[`organizer-${selectedEvent.organizer_id}`]
+                        ? "bg-white text-gray-900"
+                        : "bg-white/20 backdrop-blur-sm text-white hover:bg-white/30"
+                        } px-3 py-1.5 rounded-full text-sm font-semibold transition-all`}
                     >
                       {isFollowing[`organizer-${selectedEvent.organizer_id}`]
                         ? "✓ Following"
@@ -6794,11 +6797,10 @@ function App() {
               <div className="grid grid-cols-3 gap-3 mb-4">
                 <button
                   onClick={() => handleRSVP(selectedEvent.id, "going")}
-                  className={`py-3 rounded-xl font-semibold transition-all ${
-                    rsvpStatus[selectedEvent.id] === "going"
-                      ? "bg-green-600 text-white shadow-lg scale-105"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
+                  className={`py-3 rounded-xl font-semibold transition-all ${rsvpStatus[selectedEvent.id] === "going"
+                    ? "bg-green-600 text-white shadow-lg scale-105"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
                 >
                   <div className="text-2xl mb-1">✓</div>
                   <div className="text-sm">Going</div>
@@ -6806,11 +6808,10 @@ function App() {
 
                 <button
                   onClick={() => handleRSVP(selectedEvent.id, "maybe")}
-                  className={`py-3 rounded-xl font-semibold transition-all ${
-                    rsvpStatus[selectedEvent.id] === "maybe"
-                      ? "bg-yellow-600 text-white shadow-lg scale-105"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
+                  className={`py-3 rounded-xl font-semibold transition-all ${rsvpStatus[selectedEvent.id] === "maybe"
+                    ? "bg-yellow-600 text-white shadow-lg scale-105"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
                 >
                   <div className="text-2xl mb-1">?</div>
                   <div className="text-sm">Maybe</div>
@@ -6818,11 +6819,10 @@ function App() {
 
                 <button
                   onClick={() => handleRSVP(selectedEvent.id, "not_going")}
-                  className={`py-3 rounded-xl font-semibold transition-all ${
-                    rsvpStatus[selectedEvent.id] === "not_going"
-                      ? "bg-red-600 text-white shadow-lg scale-105"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
+                  className={`py-3 rounded-xl font-semibold transition-all ${rsvpStatus[selectedEvent.id] === "not_going"
+                    ? "bg-red-600 text-white shadow-lg scale-105"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
                 >
                   <div className="text-2xl mb-1">✗</div>
                   <div className="text-sm">Can't Go</div>
@@ -7041,11 +7041,10 @@ function App() {
                         );
                       }
                     }}
-                    className={`${
-                      isFollowing[`event-${selectedEvent.id}`]
-                        ? "bg-white text-indigo-600"
-                        : "bg-white/20 backdrop-blur-sm text-white hover:bg-white/30"
-                    } px-4 py-2 rounded-full text-sm font-semibold transition-all`}
+                    className={`${isFollowing[`event-${selectedEvent.id}`]
+                      ? "bg-white text-indigo-600"
+                      : "bg-white/20 backdrop-blur-sm text-white hover:bg-white/30"
+                      } px-4 py-2 rounded-full text-sm font-semibold transition-all`}
                   >
                     {isFollowing[`event-${selectedEvent.id}`]
                       ? "✓ Following"
@@ -7335,16 +7334,16 @@ function App() {
     });
 
     const categories = [
-      { id: "all", name: "All Events", icon: "🎉" },
-      { id: "music", name: "Music", icon: "🎵" },
-      { id: "sports", name: "Sports", icon: "⚽" },
-      { id: "tech", name: "Tech", icon: "💻" },
-      { id: "food", name: "Food & Drink", icon: "🍔" },
-      { id: "arts", name: "Arts", icon: "🎨" },
-      { id: "networking", name: "Networking", icon: "🤝" },
-      { id: "education", name: "Education", icon: "📚" },
-      { id: "health", name: "Health & Fitness", icon: "💪" },
-      { id: "entertainment", name: "Entertainment", icon: "🎭" },
+      { id: "all", name: "All Events" },//, icon: "🎉" },
+      { id: "music", name: "Music" },//, icon: "🎵" },
+      { id: "sports", name: "Sports" },//, icon: "⚽" },
+      { id: "tech", name: "Tech" },//, icon: "💻" },
+      { id: "food", name: "Food & Drink" },//, icon: "🍔" },
+      { id: "arts", name: "Arts" },//, icon: "🎨" },
+      { id: "networking", name: "Networking" },//, icon: "🤝" },
+      { id: "education", name: "Education" },//, icon: "📚" },
+      { id: "health", name: "Health & Fitness" },//, icon: "💪" },
+      { id: "entertainment", name: "Entertainment" },//, icon: "🎭" },
     ];
 
     // Apply category filter first
@@ -7543,7 +7542,8 @@ function App() {
                   {activeFilters.priceRange !== "all" && (
                     <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-sm font-semibold">
                       <span>
-                        💰 {filterLabels.priceRange[activeFilters.priceRange]}
+                        💰
+                        {filterLabels.priceRange[activeFilters.priceRange]}
                       </span>
                       <button
                         onClick={() =>
@@ -7565,9 +7565,9 @@ function App() {
                       className="inline-flex items-center gap-2 bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full text-sm font-semibold"
                     >
                       <span>
-                        {cat && typeof cat === 'string' && cat.trim() !== '' 
-  ? cat.charAt(0).toUpperCase() + cat.slice(1) 
-  : "?"}
+                        {cat && typeof cat === 'string' && cat.trim() !== ''
+                          ? cat.charAt(0).toUpperCase() + cat.slice(1)
+                          : "?"}
                       </span>
                       <button
                         onClick={() =>
@@ -7675,7 +7675,7 @@ function App() {
                 }}
                 className="px-4 py-2 bg-white border-2 border-green-200 text-green-700 rounded-full font-semibold hover:bg-green-50 transition-all whitespace-nowrap"
               >
-                💰 Free
+                Free
               </button>
 
               <button
@@ -7710,7 +7710,7 @@ function App() {
                 }}
                 className="px-4 py-2 bg-white border-2 border-purple-200 text-purple-700 rounded-full font-semibold hover:bg-purple-50 transition-all whitespace-nowrap"
               >
-                📅 This Weekend
+                This Weekend
               </button>
             </div>
           </div>
@@ -7724,11 +7724,10 @@ function App() {
                 <button
                   key={cat.id}
                   onClick={() => setExploreCategory(cat.id)}
-                  className={`px-4 py-2 rounded-full font-semibold transition-all whitespace-nowrap flex items-center gap-2 ${
-                    exploreCategory === cat.id
-                      ? "bg-gray-900 text-white shadow-md"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
+                  className={`px-4 py-2 rounded-full font-semibold transition-all whitespace-nowrap flex items-center gap-2 ${exploreCategory === cat.id
+                    ? "bg-gray-900 text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
                 >
                   <span>{cat.icon}</span>
                   <span className="text-sm">{cat.name}</span>
@@ -7749,11 +7748,10 @@ function App() {
                     <button
                       key={cat.id}
                       onClick={() => setExploreCategory(cat.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
-                        exploreCategory === cat.id
-                          ? "bg-indigo-100 text-indigo-700 font-semibold"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }`}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${exploreCategory === cat.id
+                        ? "bg-indigo-100 text-indigo-700 font-semibold"
+                        : "text-gray-700 hover:bg-gray-100"
+                        }`}
                     >
                       <span className="text-xl">{cat.icon}</span>
                       <span className="text-sm">{cat.name}</span>
@@ -7768,33 +7766,30 @@ function App() {
                   <div className="space-y-1">
                     <button
                       onClick={() => setExploreSortBy("upcoming")}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
-                        exploreSortBy === "upcoming"
-                          ? "bg-indigo-100 text-indigo-700 font-semibold"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }`}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${exploreSortBy === "upcoming"
+                        ? "bg-indigo-100 text-indigo-700 font-semibold"
+                        : "text-gray-700 hover:bg-gray-100"
+                        }`}
                     >
                       Upcoming
                     </button>
                     <button
                       onClick={() => setExploreSortBy("popular")}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
-                        exploreSortBy === "popular"
-                          ? "bg-indigo-100 text-indigo-700 font-semibold"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }`}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${exploreSortBy === "popular"
+                        ? "bg-indigo-100 text-indigo-700 font-semibold"
+                        : "text-gray-700 hover:bg-gray-100"
+                        }`}
                     >
-                      🔥 Popular
+                      Popular
                     </button>
                     <button
                       onClick={() => setExploreSortBy("trending")}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
-                        exploreSortBy === "trending"
-                          ? "bg-indigo-100 text-indigo-700 font-semibold"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }`}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${exploreSortBy === "trending"
+                        ? "bg-indigo-100 text-indigo-700 font-semibold"
+                        : "text-gray-700 hover:bg-gray-100"
+                        }`}
                     >
-                      ⭐ Trending
+                      Trending
                     </button>
                   </div>
                 </div>
@@ -7820,33 +7815,30 @@ function App() {
                 <div className="flex gap-2 mt-3 overflow-x-auto pb-2">
                   <button
                     onClick={() => setExploreSortBy("upcoming")}
-                    className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap ${
-                      exploreSortBy === "upcoming"
-                        ? "bg-indigo-600 text-white"
-                        : "bg-gray-100 text-gray-700"
-                    }`}
+                    className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap ${exploreSortBy === "upcoming"
+                      ? "bg-indigo-600 text-white"
+                      : "bg-gray-100 text-gray-700"
+                      }`}
                   >
                     Upcoming
                   </button>
                   <button
                     onClick={() => setExploreSortBy("popular")}
-                    className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap ${
-                      exploreSortBy === "popular"
-                        ? "bg-indigo-600 text-white"
-                        : "bg-gray-100 text-gray-700"
-                    }`}
+                    className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap ${exploreSortBy === "popular"
+                      ? "bg-indigo-600 text-white"
+                      : "bg-gray-100 text-gray-700"
+                      }`}
                   >
-                    🔥 Popular
+                    Popular
                   </button>
                   <button
                     onClick={() => setExploreSortBy("trending")}
-                    className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap ${
-                      exploreSortBy === "trending"
-                        ? "bg-indigo-600 text-white"
-                        : "bg-gray-100 text-gray-700"
-                    }`}
+                    className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap ${exploreSortBy === "trending"
+                      ? "bg-indigo-600 text-white"
+                      : "bg-gray-100 text-gray-700"
+                      }`}
                   >
-                    ⭐ Trending
+                    Trending
                   </button>
                 </div>
               </div>
@@ -7926,11 +7918,10 @@ function App() {
                           {/* Privacy Badge with clearer distinction */}
                           {event.privacy && event.privacy !== "public" && (
                             <div
-                              className={`text-white text-xs px-2.5 py-1 rounded-full font-bold shadow-lg flex items-center gap-1 ${
-                                event.privacy === "private"
-                                  ? "bg-gray-700"
-                                  : "bg-indigo-600"
-                              }`}
+                              className={`text-white text-xs px-2.5 py-1 rounded-full font-bold shadow-lg flex items-center gap-1 ${event.privacy === "private"
+                                ? "bg-gray-700"
+                                : "bg-indigo-600"
+                                }`}
                             >
                               <span>
                                 {event.privacy === "private" ? "🔒" : "📨"}
@@ -8439,7 +8430,7 @@ function App() {
             <div className="p-4">
               {userPosts.length === 0 ? (
                 <div className="text-center py-12">
-                  <div className="text-6xl mb-4 opacity-40">📝</div>
+                  <div className="text-6xl mb-4 opacity-40"></div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">
                     No posts yet
                   </h3>
@@ -8454,7 +8445,7 @@ function App() {
                     }}
                     className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-semibold transition-all"
                   >
-                    <span className="text-xl">✍️</span>
+                    <span className="text-xl"></span>
                     Create Your First Post
                   </button>
                 </div>
@@ -8935,229 +8926,229 @@ function App() {
           {(popularEvents.length > 0 ||
             nearbyEvents.length > 0 ||
             friendEvents.length > 0) && (
-            <div className="space-y-6">
-              {/* Popular Events */}
-              {popularEvents.length > 0 && (
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-orange-600" />
-                      🔥 Popular Events
-                    </h3>
-                    <button
-                      onClick={() => setView("explore")}
-                      className="text-sm text-indigo-600 hover:text-indigo-700 font-semibold"
-                    >
-                      See all →
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-3">
-                    {popularEvents.map((event) => (
-                      <div
-                        key={event.id}
-                        onClick={() => {
-                          setSelectedEvent(event);
-                          setView("event-detail");
-                        }}
-                        className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 cursor-pointer hover:shadow-md transition-all group"
+              <div className="space-y-6">
+                {/* Popular Events */}
+                {popularEvents.length > 0 && (
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-orange-600" />
+                        Popular Events
+                      </h3>
+                      <button
+                        onClick={() => setView("explore")}
+                        className="text-sm text-indigo-600 hover:text-indigo-700 font-semibold"
                       >
-                        <div className="flex gap-3">
-                          <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-900">
-                            <img
-                              src={event.image}
-                              alt={event.title}
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                            />
-                          </div>
+                        See all →
+                      </button>
+                    </div>
 
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-gray-900 mb-1 line-clamp-1 group-hover:text-indigo-600 transition-colors">
-                              {event.title}
-                            </h4>
-                            <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                              <Calendar className="w-4 h-4" />
-                              <span>
-                                {new Date(event.date).toLocaleDateString(
-                                  "en-US",
-                                  { month: "short", day: "numeric" },
-                                )}
-                              </span>
+                    <div className="grid grid-cols-1 gap-3">
+                      {popularEvents.map((event) => (
+                        <div
+                          key={event.id}
+                          onClick={() => {
+                            setSelectedEvent(event);
+                            setView("event-detail");
+                          }}
+                          className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 cursor-pointer hover:shadow-md transition-all group"
+                        >
+                          <div className="flex gap-3">
+                            <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-900">
+                              <img
+                                src={event.image}
+                                alt={event.title}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                              />
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                              <Users className="w-4 h-4" />
-                              <span>{event.attending || 0} attending</span>
-                            </div>
-                          </div>
 
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRSVP(event.id, "going");
-                              showSuccessToast("Added to your events!");
-                            }}
-                            className="self-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-all"
-                          >
-                            Join
-                          </button>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-bold text-gray-900 mb-1 line-clamp-1 group-hover:text-indigo-600 transition-colors">
+                                {event.title}
+                              </h4>
+                              <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                                <Calendar className="w-4 h-4" />
+                                <span>
+                                  {new Date(event.date).toLocaleDateString(
+                                    "en-US",
+                                    { month: "short", day: "numeric" },
+                                  )}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <Users className="w-4 h-4" />
+                                <span>{event.attending || 0} attending</span>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRSVP(event.id, "going");
+                                showSuccessToast("Added to your events!");
+                              }}
+                              className="self-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-all"
+                            >
+                              Join
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Nearby Events */}
-              {nearbyEvents.length > 0 && (
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                      <MapPin className="w-5 h-5 text-green-600" />
-                      📍 Events Near You
-                    </h3>
-                    <button
-                      onClick={() => setView("explore")}
-                      className="text-sm text-indigo-600 hover:text-indigo-700 font-semibold"
-                    >
-                      See all →
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-3">
-                    {nearbyEvents.map((event) => (
-                      <div
-                        key={event.id}
-                        onClick={() => {
-                          setSelectedEvent(event);
-                          setView("event-detail");
-                        }}
-                        className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 cursor-pointer hover:shadow-md transition-all group"
+                {/* Nearby Events */}
+                {nearbyEvents.length > 0 && (
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <MapPin className="w-5 h-5 text-green-600" />
+                        Events Near You
+                      </h3>
+                      <button
+                        onClick={() => setView("explore")}
+                        className="text-sm text-indigo-600 hover:text-indigo-700 font-semibold"
                       >
-                        <div className="flex gap-3">
-                          <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-900">
-                            <img
-                              src={event.image}
-                              alt={event.title}
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                            />
-                          </div>
+                        See all →
+                      </button>
+                    </div>
 
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-gray-900 mb-1 line-clamp-1 group-hover:text-indigo-600 transition-colors">
-                              {event.title}
-                            </h4>
-                            <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                              <Calendar className="w-4 h-4" />
-                              <span>
-                                {new Date(event.date).toLocaleDateString(
-                                  "en-US",
-                                  { month: "short", day: "numeric" },
-                                )}
-                              </span>
+                    <div className="grid grid-cols-1 gap-3">
+                      {nearbyEvents.map((event) => (
+                        <div
+                          key={event.id}
+                          onClick={() => {
+                            setSelectedEvent(event);
+                            setView("event-detail");
+                          }}
+                          className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 cursor-pointer hover:shadow-md transition-all group"
+                        >
+                          <div className="flex gap-3">
+                            <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-900">
+                              <img
+                                src={event.image}
+                                alt={event.title}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                              />
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                              <Users className="w-4 h-4" />
-                              <span>{event.attending || 0} attending</span>
-                            </div>
-                          </div>
 
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRSVP(event.id, "going");
-                              showSuccessToast("Added to your events!");
-                            }}
-                            className="self-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-all"
-                          >
-                            Join
-                          </button>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-bold text-gray-900 mb-1 line-clamp-1 group-hover:text-indigo-600 transition-colors">
+                                {event.title}
+                              </h4>
+                              <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                                <Calendar className="w-4 h-4" />
+                                <span>
+                                  {new Date(event.date).toLocaleDateString(
+                                    "en-US",
+                                    { month: "short", day: "numeric" },
+                                  )}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <Users className="w-4 h-4" />
+                                <span>{event.attending || 0} attending</span>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRSVP(event.id, "going");
+                                showSuccessToast("Added to your events!");
+                              }}
+                              className="self-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-all"
+                            >
+                              Join
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Friend Events */}
-              {buddies.length > 0 && friendEvents.length > 0 && (
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                      <Users className="w-5 h-5 text-purple-600" />
-                      👥 Friends Are Attending
-                    </h3>
-                    <button
-                      onClick={() => setView("explore")}
-                      className="text-sm text-indigo-600 hover:text-indigo-700 font-semibold"
-                    >
-                      See all →
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-3">
-                    {friendEvents.map((event) => (
-                      <div
-                        key={event.id}
-                        onClick={() => {
-                          setSelectedEvent(event);
-                          setView("event-detail");
-                        }}
-                        className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 cursor-pointer hover:shadow-md transition-all group"
+                {/* Friend Events */}
+                {buddies.length > 0 && friendEvents.length > 0 && (
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <Users className="w-5 h-5 text-purple-600" />
+                        Friends Are Attending
+                      </h3>
+                      <button
+                        onClick={() => setView("explore")}
+                        className="text-sm text-indigo-600 hover:text-indigo-700 font-semibold"
                       >
-                        <div className="flex gap-3">
-                          <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-900">
-                            <img
-                              src={event.image}
-                              alt={event.title}
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                            />
-                          </div>
+                        See all →
+                      </button>
+                    </div>
 
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-gray-900 mb-1 line-clamp-1 group-hover:text-indigo-600 transition-colors">
-                              {event.title}
-                            </h4>
-                            <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                              <Calendar className="w-4 h-4" />
-                              <span>
-                                {new Date(event.date).toLocaleDateString(
-                                  "en-US",
-                                  { month: "short", day: "numeric" },
-                                )}
-                              </span>
+                    <div className="grid grid-cols-1 gap-3">
+                      {friendEvents.map((event) => (
+                        <div
+                          key={event.id}
+                          onClick={() => {
+                            setSelectedEvent(event);
+                            setView("event-detail");
+                          }}
+                          className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 cursor-pointer hover:shadow-md transition-all group"
+                        >
+                          <div className="flex gap-3">
+                            <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-900">
+                              <img
+                                src={event.image}
+                                alt={event.title}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                              />
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                              <Users className="w-4 h-4" />
-                              <span>{event.attending || 0} attending</span>
-                            </div>
-                          </div>
 
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRSVP(event.id, "going");
-                              showSuccessToast("Added to your events!");
-                            }}
-                            className="self-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-all"
-                          >
-                            Join
-                          </button>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-bold text-gray-900 mb-1 line-clamp-1 group-hover:text-indigo-600 transition-colors">
+                                {event.title}
+                              </h4>
+                              <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                                <Calendar className="w-4 h-4" />
+                                <span>
+                                  {new Date(event.date).toLocaleDateString(
+                                    "en-US",
+                                    { month: "short", day: "numeric" },
+                                  )}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <Users className="w-4 h-4" />
+                                <span>{event.attending || 0} attending</span>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRSVP(event.id, "going");
+                                showSuccessToast("Added to your events!");
+                              }}
+                              className="self-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-all"
+                            >
+                              Join
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Divider */}
-              <div className="border-t border-gray-200 pt-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-indigo-600" />
-                  Your Events
-                </h2>
+                {/* Divider */}
+                <div className="border-t border-gray-200 pt-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-indigo-600" />
+                    Your Events
+                  </h2>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* User's Created Events */}
           {userCreatedEvents.length > 0 && (
@@ -9518,21 +9509,19 @@ function App() {
             <div className="flex gap-2 mt-4 overflow-x-auto scrollbar-hide">
               <button
                 onClick={() => setBuddiesTab("my-buddies")}
-                className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${
-                  buddiesTab === "my-buddies"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
+                className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${buddiesTab === "my-buddies"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
               >
                 My Buddies ({buddies.length})
               </button>
               <button
                 onClick={() => setBuddiesTab("activity")}
-                className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${
-                  buddiesTab === "activity"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
+                className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${buddiesTab === "activity"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
               >
                 Activity
                 {buddyActivity.length > 0 && (
@@ -9543,11 +9532,10 @@ function App() {
               </button>
               <button
                 onClick={() => setBuddiesTab("suggested")}
-                className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${
-                  buddiesTab === "suggested"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
+                className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${buddiesTab === "suggested"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
               >
                 Suggested
                 {suggestedBuddies.length > 0 && (
@@ -9558,11 +9546,10 @@ function App() {
               </button>
               <button
                 onClick={() => setBuddiesTab("pending")}
-                className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${
-                  buddiesTab === "pending"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
+                className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${buddiesTab === "pending"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
               >
                 Requests
                 {pendingRequests.length > 0 && (
@@ -9702,13 +9689,12 @@ function App() {
                             </span>
                             <span className="text-gray-600"> is </span>
                             <span
-                              className={`font-bold ${
-                                activity.rsvp_status === "going"
-                                  ? "text-green-600"
-                                  : activity.rsvp_status === "maybe"
-                                    ? "text-yellow-600"
-                                    : "text-gray-600"
-                              }`}
+                              className={`font-bold ${activity.rsvp_status === "going"
+                                ? "text-green-600"
+                                : activity.rsvp_status === "maybe"
+                                  ? "text-yellow-600"
+                                  : "text-gray-600"
+                                }`}
                             >
                               {activity.rsvp_status === "going"
                                 ? "going"
@@ -9858,7 +9844,7 @@ function App() {
                         />
                       ) : (
                         <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                    
+
                           {getInitial(request.sender_name)}
                         </div>
                       )}
@@ -10056,7 +10042,7 @@ function App() {
                     className="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-4"
                   >
                     <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-               
+
                       {getInitial(follow.followed_name)}
                     </div>
                     <div className="flex-1">
@@ -10229,11 +10215,10 @@ function App() {
                       const interval = startDmPolling(conv.other_user_id);
                       setPollingInterval(interval);
                     }}
-                    className={`bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-all cursor-pointer ${
-                      unreadCount > 0
-                        ? "border-2 border-indigo-200"
-                        : "border border-gray-200"
-                    }`}
+                    className={`bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-all cursor-pointer ${unreadCount > 0
+                      ? "border-2 border-indigo-200"
+                      : "border border-gray-200"
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       {/* Avatar with online indicator */}
@@ -10246,8 +10231,8 @@ function App() {
                           />
                         ) : (
                           <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg border-2 border-gray-200">
-                           
-                             {getInitial(conv.other_user_name)}
+
+                            {getInitial(conv.other_user_name)}
                           </div>
                         )}
                         <OnlineIndicator userId={conv.other_user_id} />
@@ -10469,7 +10454,7 @@ function App() {
                     />
                   ) : (
                     <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                     
+
                       {getInitial(selectedConversation.user_name)}
                     </div>
                   )}
@@ -10564,8 +10549,8 @@ function App() {
                           />
                         ) : (
                           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
-                           
-                            {getInitial(msg.sender_name )}
+
+                            {getInitial(msg.sender_name)}
                           </div>
                         ))}
 
@@ -10579,11 +10564,10 @@ function App() {
                       >
                         {/* Message bubble */}
                         <div
-                          className={`px-4 py-2 rounded-2xl break-words ${
-                            isOwnMessage
-                              ? "bg-indigo-600 text-white rounded-br-sm"
-                              : "bg-white border border-gray-200 text-gray-900 rounded-bl-sm"
-                          } ${shouldGroup ? (isOwnMessage ? "rounded-tr-2xl" : "rounded-tl-2xl") : ""}`}
+                          className={`px-4 py-2 rounded-2xl break-words ${isOwnMessage
+                            ? "bg-indigo-600 text-white rounded-br-sm"
+                            : "bg-white border border-gray-200 text-gray-900 rounded-bl-sm"
+                            } ${shouldGroup ? (isOwnMessage ? "rounded-tr-2xl" : "rounded-tl-2xl") : ""}`}
                         >
                           <p className="text-sm leading-relaxed whitespace-pre-wrap">
                             {msg.message}
@@ -10612,7 +10596,7 @@ function App() {
               {isTyping && (
                 <div className="flex gap-2 mt-3">
                   <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
-                 
+
                     {getInitial(selectedConversation.userName)}
                   </div>
                   <div className="bg-white border border-gray-200 px-4 py-3 rounded-2xl rounded-bl-sm">
@@ -10714,11 +10698,10 @@ function App() {
                 )
               }
               disabled={!newDmMessage.trim()}
-              className={`p-3 rounded-full transition-all flex-shrink-0 mb-1 ${
-                newDmMessage.trim()
-                  ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
+              className={`p-3 rounded-full transition-all flex-shrink-0 mb-1 ${newDmMessage.trim()
+                ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
             >
               <Send className="w-5 h-5" />
             </button>
@@ -10891,7 +10874,7 @@ function App() {
                     <div
                       className={`w-10 h-10 bg-gradient-to-br ${user && user.name === msg.user_name ? "from-green-600 to-teal-600" : "from-indigo-600 to-indigo-500"} rounded-full flex items-center justify-center text-white font-bold flex-shrink-0`}
                     >
-                
+
                       {getInitial(msg.user_name)}
                     </div>
                   )}
@@ -11212,7 +11195,7 @@ function App() {
                   />
                 ) : (
                   <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
-                 
+
                     {getInitial(user.name)}
                   </div>
                 )}
@@ -11353,7 +11336,7 @@ function App() {
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3 mb-3">
                           {post.user_id === user?.id &&
-                          user?.profile_picture ? (
+                            user?.profile_picture ? (
                             <img
                               src={user.profile_picture}
                               alt={post.user_name}
@@ -11367,7 +11350,7 @@ function App() {
                             />
                           ) : (
                             <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                            
+
                               {getInitial(post.user_name)}
                             </div>
                           )}
@@ -11459,23 +11442,20 @@ function App() {
                             className="flex items-center gap-2 group"
                           >
                             <div
-                              className={`p-2 rounded-full transition-all ${
-                                userLiked ? "bg-red-50" : "hover:bg-gray-100"
-                              }`}
+                              className={`p-2 rounded-full transition-all ${userLiked ? "bg-red-50" : "hover:bg-gray-100"
+                                }`}
                             >
                               <Heart
-                                className={`w-5 h-5 transition-all ${
-                                  userLiked
-                                    ? "fill-red-500 text-red-500 scale-110"
-                                    : "text-gray-600 group-hover:text-red-500"
-                                }`}
+                                className={`w-5 h-5 transition-all ${userLiked
+                                  ? "fill-red-500 text-red-500 scale-110"
+                                  : "text-gray-600 group-hover:text-red-500"
+                                  }`}
                               />
                             </div>
                             {totalLikes > 0 && (
                               <span
-                                className={`text-sm font-semibold ${
-                                  userLiked ? "text-red-500" : "text-gray-600"
-                                }`}
+                                className={`text-sm font-semibold ${userLiked ? "text-red-500" : "text-gray-600"
+                                  }`}
                               >
                                 {totalLikes}
                               </span>
@@ -11542,7 +11522,7 @@ function App() {
                               />
                             ) : (
                               <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                               
+
                                 {getInitial(user.name)}
                               </div>
                             )}
@@ -11573,7 +11553,7 @@ function App() {
                             {postComments[post.id]?.map((comment) => (
                               <div key={comment.id} className="flex gap-2">
                                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-teal-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                                 
+
                                   {getInitial(comment.user_name)}
                                 </div>
                                 <div className="flex-1">
@@ -11660,7 +11640,7 @@ function App() {
                                             className="flex gap-2"
                                           >
                                             <div className="w-7 h-7 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                                           
+
                                               {getInitial(reply.user_name)}
                                             </div>
                                             <div className="flex-1">
@@ -11686,7 +11666,7 @@ function App() {
                                                 </span>
                                                 {user &&
                                                   user.name ===
-                                                    reply.user_name && (
+                                                  reply.user_name && (
                                                     <button
                                                       onClick={() =>
                                                         handleDeleteComment(
@@ -11987,7 +11967,7 @@ function App() {
                 Event Poster
               </label>
               {newEvent.image &&
-              newEvent.image !==
+                newEvent.image !==
                 "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800" ? (
                 <div
                   className="relative rounded-lg overflow-hidden border border-gray-200"
@@ -12546,11 +12526,10 @@ const BottomNav = ({ view, user, setView, fetchFeedPosts }) => {
           {/* Explore */}
           <button
             onClick={() => setView("explore")}
-            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${
-              view === "explore"
-                ? "text-gray-900"
-                : "text-gray-500 hover:text-gray-900"
-            }`}
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${view === "explore"
+              ? "text-gray-900"
+              : "text-gray-500 hover:text-gray-900"
+              }`}
           >
             <Search className="w-6 h-6" />
             <span className="text-xs font-medium">Explore</span>
@@ -12584,11 +12563,10 @@ const BottomNav = ({ view, user, setView, fetchFeedPosts }) => {
                 setView("my-events");
               }
             }}
-            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${
-              view === "my-events"
-                ? "text-gray-900"
-                : "text-gray-500 hover:text-gray-900"
-            }`}
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all ${view === "my-events"
+              ? "text-gray-900"
+              : "text-gray-500 hover:text-gray-900"
+              }`}
           >
             <Calendar className="w-6 h-6" />
             <span className="text-xs font-medium">Events</span>
