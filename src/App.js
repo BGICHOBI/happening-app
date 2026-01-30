@@ -51,7 +51,7 @@ function App() {
     }
     return name.trim().charAt(0).toUpperCase();
   };
-  const [view, setView] = useState("discover");
+  const [view, setView] = useState("login");
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -1266,7 +1266,8 @@ function App() {
     localStorage.removeItem("authToken");
     setAuthToken(null);
     setUser(null);
-    setView("discover");
+    setView("login");
+    showSuccessToast("Logged out successfully");
   };
 
   const fetchEvents = async () => {
@@ -2522,6 +2523,12 @@ function App() {
 
   // Social feed functions
   const fetchFeedPosts = async (phase = null) => {
+
+  console.log('🔍 DEBUG - authToken:', authToken); 
+  console.log('🔍 authToken type:', typeof authToken);
+  console.log('🔍 authToken truthy?:', !!authToken);
+  console.log('🔍 DEBUG - localStorage:', localStorage.getItem('authToken'));
+
     try {
       setLoadingFeed(true);
       let url = `${API_URL}/api/feed-posts`;
@@ -2534,6 +2541,9 @@ function App() {
 
       const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
 
+      console.log('🔍 URL:', url);
+console.log('🔍 Headers:', headers);
+      
       const response = await fetch(url, { headers });
       if (response.ok) {
         let data = await response.json();
@@ -11884,6 +11894,7 @@ function App() {
 
     const myEvents = events.filter((e) => e.organizer === user.name);
 
+    
     return (
       <div className="min-h-screen bg-gray-50 pb-24">
         <header className="bg-white shadow-sm">
@@ -12470,6 +12481,38 @@ function App() {
       </div>
     );
   }
+
+  // Authentication Gate - ADD IT HERE, AFTER organizer view closes
+if (!user && !authToken && view !== "login" && view !== "signup") {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-md">
+        <ToastNotification />
+        <Calendar className="w-16 h-16 mx-auto text-indigo-600 mb-4" />
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          Welcome to Happening
+        </h2>
+        <p className="text-gray-500 mb-6">
+          Please log in or sign up to continue
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setView("login")}
+            className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-semibold transition-all"
+          >
+            Login
+          </button>
+          <button
+            onClick={() => setView("signup")}
+            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold transition-all"
+          >
+            Sign Up
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
   return (
     <>
