@@ -54,6 +54,7 @@ function App() {
   const [view, setView] = useState("login");
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingProfilePic, setUploadingProfilePic] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
@@ -207,7 +208,7 @@ function App() {
   // Auth state
   const [user, setUser] = useState(null);
   const [authToken, setAuthToken] = useState(localStorage.getItem("authToken"));
-  const [authLoading, setAuthLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState("");
 
   const [authForm, setAuthForm] = useState({
@@ -1052,6 +1053,56 @@ function App() {
   );
 
   useEffect(() => {
+  const initAuth = async () => {
+    console.log("🔍 initAuth: Starting auth check");
+    const token = localStorage.getItem("authToken");
+    console.log("🔍 initAuth: Token from storage:", token ? "EXISTS" : "NULL");
+    
+    if (token) {
+      setAuthToken(token);
+      // Try to fetch current user
+      try {
+        console.log("🔍 initAuth: Calling /api/auth/me");   
+        const response = await fetch(`${API_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        console.log("🔍 initAuth: Response status:", response.status);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log("🔍 initAuth: User data received:", data);
+          setUser(data);
+          setView("discover"); // Restore to feed if logged in
+          console.log("🔍 initAuth: Set view to discover");
+        } else {
+          console.log("❌ initAuth: Token invalid, logging out");
+          // Token invalid, clear it
+          localStorage.removeItem("authToken");
+          setAuthToken(null);
+          setView("login");
+        }
+      } catch (error) {
+        console.error("❌ initAuth: Error:", error);
+        console.error("Auth check failed:", error);
+        localStorage.removeItem("authToken");
+        setAuthToken(null);
+        setView("login");
+      }
+    } else {
+      console.log("🔍 initAuth: No token, going to login");
+      // No token, go to login
+      setView("login");
+    }
+    console.log("🔍 initAuth: Setting authLoading to false");
+    setAuthLoading(false); // Done checking
+  };
+
+  initAuth();
+}, []); // Empty array = run once on mount
+
+
+  useEffect(() => {
     fetchEvents();
     fetchFeedPosts();
     if (authToken) {
@@ -1078,10 +1129,7 @@ function App() {
       if (response.ok) {
         const data = await response.json();
         setUser(data);
-      } else {
-        // Token invalid, clear it
-        handleLogout();
-      }
+      } 
     } catch (error) {
       console.error("Error fetching user:", error);
     }
@@ -4293,6 +4341,18 @@ console.log('🔍 Headers:', headers);
 
   // Login View
   // Login View - Two Column Layout
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (view === "login") {
     return (
       <div className="min-h-screen bg-gray-50 flex">
@@ -4658,6 +4718,17 @@ console.log('🔍 Headers:', headers);
   }
   // Signup View
   // Signup View - Two Column Layout
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (view === "signup") {
     return (
       <div className="min-h-screen bg-gray-50 flex">
@@ -5011,6 +5082,18 @@ console.log('🔍 Headers:', headers);
 
   // Social Feed View (Main Screen)
   // Discover View (Main Screen)
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (view === "discover") {
     const handleRefresh = async () => {
       await Promise.all([
@@ -6540,6 +6623,18 @@ console.log('🔍 Headers:', headers);
   }
 
   // Event Detail View - Enhanced
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (view === "event-detail" && selectedEvent) {
     return (
       <div className="min-h-screen bg-gray-50 pb-24">
@@ -7155,6 +7250,18 @@ console.log('🔍 Headers:', headers);
   }
 
   // Attendees View
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (view === "attendees" && selectedEvent) {
     const rsvps = eventRSVPs[selectedEvent.id];
 
@@ -7336,6 +7443,17 @@ console.log('🔍 Headers:', headers);
   }
 
   // Explore Events View
+if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (view === "explore") {
     console.log("🔍 EXPLORE VIEW ACTIVE!", {
       eventsCount: events.length,
@@ -8180,6 +8298,18 @@ console.log('🔍 Headers:', headers);
 
   // Profile Page View
   // Profile Page View
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (view === "profile") {
     // Get user's posts and events
     const userPosts = feedPosts.filter((post) => post.user_id === user?.id);
@@ -8851,6 +8981,17 @@ console.log('🔍 Headers:', headers);
   // }
 
   // My Events View (Bottom Nav)
+if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (view === "my-events") {
     if (!user) {
       return (
@@ -9481,6 +9622,17 @@ console.log('🔍 Headers:', headers);
   }
 
   // Buddies Page View
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (view === "buddies") {
     return (
       <div className="min-h-screen bg-gray-50 pb-24">
@@ -9975,6 +10127,18 @@ console.log('🔍 Headers:', headers);
   }
 
   // Following Page View
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (view === "following") {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -10169,6 +10333,18 @@ console.log('🔍 Headers:', headers);
 
   // Messages Inbox View
   // Messages Inbox View
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (view === "messages") {
     // Calculate total unread count for badge
     const totalUnreadCount = Object.values(unreadCounts).reduce(
@@ -10424,6 +10600,18 @@ console.log('🔍 Headers:', headers);
 
   // DM Conversation View
   // DM Conversation View
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (view === "dm-conversation" && selectedConversation) {
     const isTyping = typingUsers[selectedConversation.userId];
     const isOnline = onlineUsers.has(selectedConversation.userId);
@@ -10721,6 +10909,18 @@ console.log('🔍 Headers:', headers);
     );
   }
   // Notifications View
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (view === "notifications") {
     return (
       <div className="min-h-screen bg-gray-50 pb-24">
@@ -10814,6 +11014,18 @@ console.log('🔍 Headers:', headers);
   }
 
   // Event Chat View
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (view === "event-chat" && selectedEvent) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-teal-50">
@@ -10956,6 +11168,18 @@ console.log('🔍 Headers:', headers);
   }
 
   // Event Feed View - Redesigned
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (view === "event-feed" && selectedEvent) {
     const handleCreatePost = async () => {
       if (!authToken) {
@@ -11860,6 +12084,17 @@ console.log('🔍 Headers:', headers);
   };
 
   // Organizer Dashboard View
+if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (view === "organizer") {
     if (!user) {
       return (
@@ -12536,6 +12771,7 @@ if (!user && !authToken && view !== "login" && view !== "signup") {
 
 // Bottom Navigation Component (rendered when needed)
 const BottomNav = ({ view, user, setView, fetchFeedPosts }) => {
+
   if (view === "login" || view === "signup") return null;
 
   return (
