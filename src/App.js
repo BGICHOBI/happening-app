@@ -54,7 +54,7 @@ function App() {
   const [view, setView] = useState("login");
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingProfilePic, setUploadingProfilePic] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
@@ -1053,53 +1053,53 @@ function App() {
   );
 
   useEffect(() => {
-  const initAuth = async () => {
-    console.log("🔍 initAuth: Starting auth check");
-    const token = localStorage.getItem("authToken");
-    console.log("🔍 initAuth: Token from storage:", token ? "EXISTS" : "NULL");
-    
-    if (token) {
-      setAuthToken(token);
-      // Try to fetch current user
-      try {
-        console.log("🔍 initAuth: Calling /api/auth/me");   
-        const response = await fetch(`${API_URL}/api/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+    const initAuth = async () => {
+      console.log("🔍 initAuth: Starting auth check");
+      const token = localStorage.getItem("authToken");
+      console.log("🔍 initAuth: Token from storage:", token ? "EXISTS" : "NULL");
 
-        console.log("🔍 initAuth: Response status:", response.status);
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log("🔍 initAuth: User data received:", data);
-          setUser(data);
-          setView("discover"); // Restore to feed if logged in
-          console.log("🔍 initAuth: Set view to discover");
-        } else {
-          console.log("❌ initAuth: Token invalid, logging out");
-          // Token invalid, clear it
+      if (token) {
+        setAuthToken(token);
+        // Try to fetch current user
+        try {
+          console.log("🔍 initAuth: Calling /api/auth/me");
+          const response = await fetch(`${API_URL}/api/auth/me`, {
+            headers: { Authorization: `Bearer ${authToken}` }
+          });
+
+          console.log("🔍 initAuth: Response status:", response.status);
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log("🔍 initAuth: User data received:", data);
+            setUser(data);
+            setView("discover"); // Restore to feed if logged in
+            console.log("🔍 initAuth: Set view to discover");
+          } else {
+            console.log("❌ initAuth: Token invalid, logging out");
+            // Token invalid, clear it
+            localStorage.removeItem("authToken");
+            setAuthToken(null);
+            setView("login");
+          }
+        } catch (error) {
+          console.error("❌ initAuth: Error:", error);
+          console.error("Auth check failed:", error);
           localStorage.removeItem("authToken");
           setAuthToken(null);
           setView("login");
         }
-      } catch (error) {
-        console.error("❌ initAuth: Error:", error);
-        console.error("Auth check failed:", error);
-        localStorage.removeItem("authToken");
-        setAuthToken(null);
+      } else {
+        console.log("🔍 initAuth: No token, going to login");
+        // No token, go to login
         setView("login");
       }
-    } else {
-      console.log("🔍 initAuth: No token, going to login");
-      // No token, go to login
-      setView("login");
-    }
-    console.log("🔍 initAuth: Setting authLoading to false");
-    setAuthLoading(false); // Done checking
-  };
+      console.log("🔍 initAuth: Setting authLoading to false");
+      setAuthLoading(false); // Done checking
+    };
 
-  initAuth();
-}, []); // Empty array = run once on mount
+    initAuth();
+  }, []); // Empty array = run once on mount
 
 
   useEffect(() => {
@@ -1129,7 +1129,7 @@ function App() {
       if (response.ok) {
         const data = await response.json();
         setUser(data);
-      } 
+      }
     } catch (error) {
       console.error("Error fetching user:", error);
     }
@@ -2572,10 +2572,10 @@ function App() {
   // Social feed functions
   const fetchFeedPosts = async (phase = null) => {
 
-  console.log('🔍 DEBUG - authToken:', authToken); 
-  console.log('🔍 authToken type:', typeof authToken);
-  console.log('🔍 authToken truthy?:', !!authToken);
-  console.log('🔍 DEBUG - localStorage:', localStorage.getItem('authToken'));
+    console.log('🔍 DEBUG - authToken:', authToken);
+    console.log('🔍 authToken type:', typeof authToken);
+    console.log('🔍 authToken truthy?:', !!authToken);
+    console.log('🔍 DEBUG - localStorage:', localStorage.getItem('authToken'));
 
     try {
       setLoadingFeed(true);
@@ -2590,8 +2590,8 @@ function App() {
       const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
 
       console.log('🔍 URL:', url);
-console.log('🔍 Headers:', headers);
-      
+      console.log('🔍 Headers:', headers);
+
       const response = await fetch(url, { headers });
       if (response.ok) {
         let data = await response.json();
@@ -2623,6 +2623,12 @@ console.log('🔍 Headers:', headers);
         }
 
         setFeedPosts(data);
+        // ✨ NEW: Fetch reaction counts for all posts
+        if (authToken) {
+          data.forEach(post => {
+            fetchFeedReactions(post.id);
+          });
+        }
       }
     } catch (error) {
       console.error("Error fetching feed:", error);
@@ -2748,97 +2754,101 @@ console.log('🔍 Headers:', headers);
   };
 
   // Feed interactions functions
-  const handleFeedReaction = async (postId, reaction) => {
-    if (!authToken) {
-      showInfoToast("Please login to react");
-      return;
+ const handleFeedReaction = async (postId, reaction) => {
+  try {
+    const response = await fetch(`${API_URL}/api/feed-reactions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      },
+      body: JSON.stringify({ post_id: postId, reaction_type: reaction })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to add reaction');
     }
 
-    try {
-      const response = await fetch(
-        `${API_URL}/api/feed-interactions/reactions`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({ postId, reaction }),
-        },
-      );
+    const data = await response.json();
+    console.log('Reaction added:', data);
 
-      if (response.ok) {
-        fetchFeedReactions(postId);
-      }
-    } catch (error) {
-      console.error("Error reacting:", error);
-    }
-  };
+    // ✅ Simply refetch the entire feed to get updated counts and user_reacted status
+    fetchFeed();
 
-  const fetchFeedReactions = async (postId) => {
-    try {
-      const response = await fetch(
-        `${API_URL}/api/feed-interactions/reactions/${postId}`,
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setFeedReactions((prev) => ({ ...prev, [postId]: data }));
-      }
-    } catch (error) {
-      console.error("Error fetching reactions:", error);
-    }
-  };
+    return data;
+  } catch (error) {
+    console.error('Error adding feed reaction:', error);
+    throw error;
+  }
+};
 
+  
   const handleAddFeedComment = async (postId, parentCommentId = null) => {
-    if (!authToken) {
-      showInfoToast("Please login to comment");
-      return;
-    }
+  if (!authToken) {
+    showInfoToast("Please login to comment");
+    return;
+  }
 
-    if (!newFeedComment.trim()) {
-      return;
-    }
+  if (!newFeedComment.trim()) {
+    return;
+  }
 
-    try {
-      const response = await fetch(
-        `${API_URL}/api/feed-interactions/comments`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({
-            postId,
-            comment: newFeedComment,
-            parentCommentId,
-          }),
+  try {
+    const response = await fetch(
+      `${API_URL}/api/feed-comments`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
         },
-      );
+        body: JSON.stringify({
+          post_id: postId,        // ✅ Changed from postId to post_id
+          content: newFeedComment, // ✅ Changed from comment to content
+          parent_comment_id: parentCommentId, // ✅ Changed to snake_case
+        }),
+      },
+    );
 
-      if (response.ok) {
-        setNewFeedComment("");
-        setReplyingToFeed(null);
-        fetchFeedComments(postId);
-      }
-    } catch (error) {
-      console.error("Error adding comment:", error);
+    if (response.ok) {
+      setNewFeedComment("");
+      setReplyingToFeed(null);
+      await fetchFeedComments(postId);
+      
+      // ✅ Update comment count in feed
+      setFeedPosts(prevPosts => 
+        prevPosts.map(post => 
+          post.id === postId 
+            ? { ...post, comment_count: (post.comment_count || 0) + 1 }
+            : post
+        )
+      );
     }
-  };
+  } catch (error) {
+    console.error("Error adding comment:", error);
+  }
+};
 
   const fetchFeedComments = async (postId) => {
-    try {
-      const response = await fetch(
-        `${API_URL}/api/feed-interactions/comments/${postId}`,
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setFeedComments((prev) => ({ ...prev, [postId]: data }));
+  try {
+    const response = await fetch(
+      `${API_URL}/api/feed-comments/post/${postId}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${authToken}` // ✅ Added auth header
+        }
       }
-    } catch (error) {
-      console.error("Error fetching comments:", error);
+    );
+    if (response.ok) {
+      const data = await response.json();
+      setFeedComments((prev) => ({ ...prev, [postId]: data }));
     }
-  };
+  } catch (error) {
+    console.error("Error fetching comments:", error);
+  }
+};
+
 
   const handleDeleteFeedComment = async (commentId, postId) => {
     if (!authToken) return;
@@ -2849,7 +2859,7 @@ console.log('🔍 Headers:', headers);
 
     try {
       const response = await fetch(
-        `${API_URL}/api/feed-interactions/comments/${commentId}`,
+        `${API_URL}/api/feed-comments/post/${commentId}`,
         {
           method: "DELETE",
           headers: {
@@ -5483,627 +5493,537 @@ console.log('🔍 Headers:', headers);
                 />
               ) : (
                 <div className="space-y-4">
-                  {feedPosts.map((post) => (
-                    <div
-                      key={post.id}
-                      className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
-                    >
-                      {/* Post Header */}
-                      <div className="p-4">
-                        <div className="flex items-start gap-3">
+                  {feedPosts.map((post) => {
+                    const event = events.find(e => e.id === post.event_id);
+                    return (
+                      console.log('Feed post data:', post),
+                      <div
+                        key={post.id}
+                        className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+
+                      >
+                        {/* Post Header */}
+                        <div className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div
+                              onClick={() => {
+                                setView("profile");
+                              }}
+                              className="cursor-pointer flex-shrink-0"
+                            >
+                              {post.user_id === user?.id &&
+                                user?.profile_picture ? (
+                                <img
+                                  src={user.profile_picture}
+                                  alt={post.user_name}
+                                  className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 hover:border-indigo-400 transition-all"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold hover:bg-gray-300 transition-all">
+
+                                  {getInitial(post.user_name)}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3
+                                  onClick={() => {
+                                    setView("profile");
+                                  }}
+                                  className="font-bold text-gray-900 hover:text-indigo-600 transition-colors cursor-pointer"
+                                >
+                                  {post.user_name}
+                                </h3>
+
+                                {/* Live Badge */}
+                                {post.event_phase === "live" && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-50 text-red-600 text-xs font-bold rounded-full border border-red-200 animate-pulse">
+                                    <span className="w-2 h-2 bg-red-600 rounded-full"></span>
+                                    LIVE NOW
+                                  </span>
+                                )}
+
+                                {/* Starting Soon Badge */}
+                                {post.event_phase === "starting-soon" && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-50 text-orange-600 text-xs font-bold rounded-full border border-orange-200">
+                                    <Clock className="w-3 h-3" />
+                                    STARTING SOON
+                                  </span>
+                                )}
+
+                                {/* Trending Badge */}
+                                {getTrendingScore(post) > 5 && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-full border border-indigo-200">
+                                    <TrendingUp className="w-3 h-3" />
+                                    TRENDING
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-2 mt-1">
+                                <p className="text-sm text-gray-500">
+                                  {new Date(post.created_at).toLocaleString()}
+                                </p>
+
+                                {/* Discussion Count */}
+                                {getDiscussionCount(post.id) > 0 && (
+                                  <>
+                                    <span className="text-gray-300">•</span>
+                                    <p className="text-sm text-gray-600 font-medium">
+                                      {getDiscussionCount(post.id)}{" "}
+                                      {getDiscussionCount(post.id) === 1
+                                        ? "person"
+                                        : "people"}{" "}
+                                      discussing
+                                    </p>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            {user && user.name === post.user_name && (
+                              <button
+                                onClick={() => deleteFeedPost(post.id)}
+                                className="text-red-600 hover:text-red-800"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Post Content */}
+                          {post.content && (
+                            <p className="mt-3 text-gray-900 whitespace-pre-wrap">
+                              {post.content}
+                            </p>
+                          )}
+
+                          {/* Post Media */}
+                          {post.media_url && (
+                            <div className="mt-3">
+                              {post.post_type === "video" ? (
+                                <video
+                                  controls
+                                  className="w-full rounded-lg max-h-96"
+                                  onError={(e) => {
+                                    console.error("Video load error:", e);
+                                    showErrorToast("Failed to load video");
+                                  }}
+                                >
+                                  <source src={post.media_url} type="video/mp4" />
+                                  <source
+                                    src={post.media_url}
+                                    type="video/webm"
+                                  />
+                                  Your browser does not support video playback.
+                                </video>
+                              ) : (
+                                <img
+                                  src={post.media_url}
+                                  alt="Post media"
+                                  className="w-full rounded-lg max-h-96 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    console.error("Image load error:", e);
+                                    e.target.src =
+                                      "https://via.placeholder.com/800x400?text=Image+Not+Available";
+                                    showErrorToast("Failed to load image");
+                                  }}
+                                  onClick={() => {
+                                    setModalImage(post.media_url);
+                                    setModalEventTitle(
+                                      post.user_name + "'s post",
+                                    );
+                                    setShowImageModal(true);
+                                  }}
+                                />
+                              )}
+                            </div>
+                          )}
+
+                          {/* Event Context Card - Enhanced */}
                           <div
                             onClick={() => {
-                              setView("profile");
-                            }}
-                            className="cursor-pointer flex-shrink-0"
-                          >
-                            {post.user_id === user?.id &&
-                              user?.profile_picture ? (
-                              <img
-                                src={user.profile_picture}
-                                alt={post.user_name}
-                                className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 hover:border-indigo-400 transition-all"
-                              />
-                            ) : (
-                              <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold hover:bg-gray-300 transition-all">
-
-                                {getInitial(post.user_name)}
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h3
-                                onClick={() => {
-                                  setView("profile");
-                                }}
-                                className="font-bold text-gray-900 hover:text-indigo-600 transition-colors cursor-pointer"
-                              >
-                                {post.user_name}
-                              </h3>
-
-                              {/* Live Badge */}
-                              {post.event_phase === "live" && (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-50 text-red-600 text-xs font-bold rounded-full border border-red-200 animate-pulse">
-                                  <span className="w-2 h-2 bg-red-600 rounded-full"></span>
-                                  LIVE NOW
-                                </span>
-                              )}
-
-                              {/* Starting Soon Badge */}
-                              {post.event_phase === "starting-soon" && (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-50 text-orange-600 text-xs font-bold rounded-full border border-orange-200">
-                                  <Clock className="w-3 h-3" />
-                                  STARTING SOON
-                                </span>
-                              )}
-
-                              {/* Trending Badge */}
-                              {getTrendingScore(post) > 5 && (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-full border border-indigo-200">
-                                  <TrendingUp className="w-3 h-3" />
-                                  TRENDING
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="flex items-center gap-2 mt-1">
-                              <p className="text-sm text-gray-500">
-                                {new Date(post.created_at).toLocaleString()}
-                              </p>
-
-                              {/* Discussion Count */}
-                              {getDiscussionCount(post.id) > 0 && (
-                                <>
-                                  <span className="text-gray-300">•</span>
-                                  <p className="text-sm text-gray-600 font-medium">
-                                    {getDiscussionCount(post.id)}{" "}
-                                    {getDiscussionCount(post.id) === 1
-                                      ? "person"
-                                      : "people"}{" "}
-                                    discussing
-                                  </p>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          {user && user.name === post.user_name && (
-                            <button
-                              onClick={() => deleteFeedPost(post.id)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              <Trash2 className="w-5 h-5" />
-                            </button>
-                          )}
-                        </div>
-
-                        {/* Post Content */}
-                        {post.content && (
-                          <p className="mt-3 text-gray-900 whitespace-pre-wrap">
-                            {post.content}
-                          </p>
-                        )}
-
-                        {/* Post Media */}
-                        {post.media_url && (
-                          <div className="mt-3">
-                            {post.post_type === "video" ? (
-                              <video
-                                controls
-                                className="w-full rounded-lg max-h-96"
-                                onError={(e) => {
-                                  console.error("Video load error:", e);
-                                  showErrorToast("Failed to load video");
-                                }}
-                              >
-                                <source src={post.media_url} type="video/mp4" />
-                                <source
-                                  src={post.media_url}
-                                  type="video/webm"
-                                />
-                                Your browser does not support video playback.
-                              </video>
-                            ) : (
-                              <img
-                                src={post.media_url}
-                                alt="Post media"
-                                className="w-full rounded-lg max-h-96 object-cover cursor-pointer hover:opacity-95 transition-opacity"
-                                loading="lazy"
-                                onError={(e) => {
-                                  console.error("Image load error:", e);
-                                  e.target.src =
-                                    "https://via.placeholder.com/800x400?text=Image+Not+Available";
-                                  showErrorToast("Failed to load image");
-                                }}
-                                onClick={() => {
-                                  setModalImage(post.media_url);
-                                  setModalEventTitle(
-                                    post.user_name + "'s post",
-                                  );
-                                  setShowImageModal(true);
-                                }}
-                              />
-                            )}
-                          </div>
-                        )}
-
-                        {/* Event Context Card - Enhanced */}
-                        <div
-                          onClick={() => {
-                            const event = events.find(
-                              (e) => e.id === post.event_id,
-                            );
-                            if (event) {
-                              setSelectedEvent(event);
-                              setView("event-detail");
-                              if (user) {
-                                fetchUserRSVP(event.id);
-                                checkIsFollowing("event", event.id);
-                                if (event.organizer_id) {
-                                  checkIsFollowing(
-                                    "organizer",
-                                    event.organizer_id,
-                                  );
-                                }
-                              }
-                              fetchEventRSVPs(event.id);
-                              fetchFollowerCount("event", event.id);
-                            }
-                          }}
-                          className="mt-3 group cursor-pointer"
-                        >
-                          <div className="relative bg-gradient-to-br from-indigo-50 via-white to-indigo-50 rounded-xl border-2 border-indigo-100 p-4 hover:border-indigo-300 hover:shadow-md transition-all">
-                            {/* Top: Event Title + Phase Badge */}
-                            <div className="flex items-start justify-between gap-3 mb-3">
-                              <div className="flex items-start gap-2 flex-1 min-w-0">
-                                <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                                  <Calendar className="w-5 h-5 text-white" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="font-bold text-gray-900 text-lg leading-tight mb-1 group-hover:text-indigo-600 transition-colors">
-                                    {post.event_title}
-                                  </h4>
-                                  <div className="flex items-center gap-2">
-                                    {(() => {
-                                      const event = events.find(
-                                        (e) => e.id === post.event_id,
-                                      );
-                                      const phase = event
-                                        ? getEventPhase(event)
-                                        : "upcoming";
-
-                                      if (phase === "live") {
-                                        return (
-                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded-full">
-                                            <span className="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
-                                            LIVE
-                                          </span>
-                                        );
-                                      } else if (phase === "starting-soon") {
-                                        return (
-                                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-bold rounded-full">
-                                            <Clock className="w-3 h-3" />
-                                            SOON
-                                          </span>
-                                        );
-                                      }
-                                      return null;
-                                    })()}
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Arrow indicator */}
-                              <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center group-hover:bg-indigo-600 transition-all">
-                                <svg
-                                  className="w-4 h-4 text-indigo-600 group-hover:text-white transition-colors"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M9 5l7 7-7 7"
-                                  />
-                                </svg>
-                              </div>
-                            </div>
-
-                            {/* Bottom: Event Details */}
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="flex items-center gap-2 text-sm text-gray-700">
-                                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-                                  <Clock className="w-4 h-4 text-indigo-600" />
-                                </div>
-                                <div>
-                                  <p className="text-xs text-gray-500 font-medium">
-                                    Date
-                                  </p>
-                                  <p className="font-semibold">
-                                    {new Date(
-                                      post.event_date,
-                                    ).toLocaleDateString("en-US", {
-                                      month: "short",
-                                      day: "numeric",
-                                    })}
-                                  </p>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-2 text-sm text-gray-700">
-                                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-                                  <MapPin className="w-4 h-4 text-indigo-600" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs text-gray-500 font-medium">
-                                    Location
-                                  </p>
-                                  <p className="font-semibold truncate">
-                                    {post.event_location}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Attendee Count */}
-                            {(() => {
                               const event = events.find(
                                 (e) => e.id === post.event_id,
                               );
-                              const attendeeCount = event?.attendees || 0;
-                              if (attendeeCount > 0) {
-                                return (
-                                  <div className="mt-3 pt-3 border-t border-indigo-100">
-                                    <div className="flex items-center gap-2 text-sm">
-                                      <Users className="w-4 h-4 text-indigo-600" />
-                                      <span className="font-semibold text-gray-900">
-                                        {attendeeCount}
-                                      </span>
-                                      <span className="text-gray-600">
-                                        {attendeeCount === 1
-                                          ? "person"
-                                          : "people"}{" "}
-                                        attending
-                                      </span>
+                              if (event) {
+                                setSelectedEvent(event);
+                                setView("event-detail");
+                                if (user) {
+                                  fetchUserRSVP(event.id);
+                                  checkIsFollowing("event", event.id);
+                                  if (event.organizer_id) {
+                                    checkIsFollowing(
+                                      "organizer",
+                                      event.organizer_id,
+                                    );
+                                  }
+                                }
+                                fetchEventRSVPs(event.id);
+                                fetchFollowerCount("event", event.id);
+                              }
+                            }}
+                            className="mt-3 group cursor-pointer"
+                          >
+                            <div className="relative bg-gradient-to-br from-indigo-50 via-white to-indigo-50 rounded-xl border-2 border-indigo-100 p-4 hover:border-indigo-300 hover:shadow-md transition-all">
+                              {/* Top: Event Title + Phase Badge */}
+                              <div className="flex items-start justify-between gap-3 mb-3">
+                                <div className="flex items-start gap-2 flex-1 min-w-0">
+                                  <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <Calendar className="w-5 h-5 text-white" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="font-bold text-gray-900 text-lg leading-tight mb-1 group-hover:text-indigo-600 transition-colors">
+                                      {post.event_title}
+                                    </h4>
+                                    <div className="flex items-center gap-2">
+                                      {(() => {
+                                        const event = events.find(
+                                          (e) => e.id === post.event_id,
+                                        );
+                                        const phase = event
+                                          ? getEventPhase(event)
+                                          : "upcoming";
+
+                                        if (phase === "live") {
+                                          return (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 text-xs font-bold rounded-full">
+                                              <span className="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
+                                              LIVE
+                                            </span>
+                                          );
+                                        } else if (phase === "starting-soon") {
+                                          return (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-bold rounded-full">
+                                              <Clock className="w-3 h-3" />
+                                              SOON
+                                            </span>
+                                          );
+                                        }
+                                        return null;
+                                      })()}
                                     </div>
                                   </div>
-                                );
-                              }
-                              return null;
-                            })()}
+                                </div>
 
-                            {/* View Event CTA */}
-                            <div className="mt-3 pt-3 border-t border-indigo-100">
-                              <div className="flex items-center justify-between text-sm font-semibold text-indigo-600 group-hover:text-indigo-700">
-                                <span>View Event Details</span>
-                                <svg
-                                  className="w-4 h-4 group-hover:translate-x-1 transition-transform"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M13 7l5 5m0 0l-5 5m5-5H6"
-                                  />
-                                </svg>
+                                {/* Arrow indicator */}
+                                <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center group-hover:bg-indigo-600 transition-all">
+                                  <svg
+                                    className="w-4 h-4 text-indigo-600 group-hover:text-white transition-colors"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M9 5l7 7-7 7"
+                                    />
+                                  </svg>
+                                </div>
+                              </div>
+
+                              {/* Bottom: Event Details */}
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="flex items-center gap-2 text-sm text-gray-700">
+                                  <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+                                    <Clock className="w-4 h-4 text-indigo-600" />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-500 font-medium">
+                                      Date
+                                    </p>
+                                    <p className="font-semibold">
+                                      {new Date(
+                                        post.event_date,
+                                      ).toLocaleDateString("en-US", {
+                                        month: "short",
+                                        day: "numeric",
+                                      })}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 text-sm text-gray-700">
+                                  <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+                                    <MapPin className="w-4 h-4 text-indigo-600" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs text-gray-500 font-medium">
+                                      Location
+                                    </p>
+                                    <p className="font-semibold truncate">
+                                      {post.event_location}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Attendee Count */}
+                              {(() => {
+                                const event = events.find(
+                                  (e) => e.id === post.event_id,
+                                );
+                                const attendeeCount = event?.attendees || 0;
+                                if (attendeeCount > 0) {
+                                  return (
+                                    <div className="mt-3 pt-3 border-t border-indigo-100">
+                                      <div className="flex items-center gap-2 text-sm">
+                                        <Users className="w-4 h-4 text-indigo-600" />
+                                        <span className="font-semibold text-gray-900">
+                                          {attendeeCount}
+                                        </span>
+                                        <span className="text-gray-600">
+                                          {attendeeCount === 1
+                                            ? "person"
+                                            : "people"}{" "}
+                                          attending
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
+
+                              {/* View Event CTA */}
+                              <div className="mt-3 pt-3 border-t border-indigo-100">
+                                <div className="flex items-center justify-between text-sm font-semibold text-indigo-600 group-hover:text-indigo-700">
+                                  <span>View Event Details</span>
+                                  <svg
+                                    className="w-4 h-4 group-hover:translate-x-1 transition-transform"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                                    />
+                                  </svg>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
+                         
+                          {/* Engagement Stats Bar - Prominent */}
+                          {(() => {
+                            const reactions = feedReactions[post.id] || {};
+                            const totalReactions = Object.values(
+                              reactions,
+                            ).reduce((sum, arr) => sum + (arr?.length || 0), 0);
+                            const comments = feedComments[post.id] || [];
+                            const totalComments = comments.length;
 
-                        {/* Engagement Stats Bar - Prominent */}
-                        {(() => {
-                          const reactions = feedReactions[post.id] || {};
-                          const totalReactions = Object.values(
-                            reactions,
-                          ).reduce((sum, arr) => sum + (arr?.length || 0), 0);
-                          const comments = feedComments[post.id] || [];
-                          const totalComments = comments.length;
-
-                          return (
-                            <>
-                              {/* Stats Summary */}
-                              {(totalReactions > 0 || totalComments > 0) && (
-                                <div className="mt-3 flex items-center justify-between text-sm text-gray-600 px-1">
-                                  {totalReactions > 0 && (
-                                    <div className="flex items-center gap-1">
-                                      <div className="flex -space-x-1">
-                                        {reactions.like?.length > 0 && (
-                                          <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center border border-white">
-                                            <span className="text-xs">❤️</span>
-                                          </div>
-                                        )}
-                                        {reactions.recommend?.length > 0 && (
-                                          <div className="w-5 h-5 bg-indigo-100 rounded-full flex items-center justify-center border border-white">
-                                            <Share2 className="w-3 h-3 text-indigo-600" />
-                                          </div>
-                                        )}
+                            return (
+                              <>
+                                {/* Stats Summary */}
+                                {(totalReactions > 0 || totalComments > 0) && (
+                                  <div className="mt-3 flex items-center justify-between text-sm text-gray-600 px-1">
+                                    {totalReactions > 0 && (
+                                      <div className="flex items-center gap-1">
+                                        <div className="flex -space-x-1">
+                                          {reactions.like?.length > 0 && (
+                                            <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center border border-white">
+                                              <span className="text-xs">❤️</span>
+                                            </div>
+                                          )}
+                                          {reactions.recommend?.length > 0 && (
+                                            <div className="w-5 h-5 bg-indigo-100 rounded-full flex items-center justify-center border border-white">
+                                              <Share2 className="w-3 h-3 text-indigo-600" />
+                                            </div>
+                                          )}
+                                        </div>
+                                        <span className="font-semibold text-gray-700">
+                                          {totalReactions}
+                                        </span>
                                       </div>
-                                      <span className="font-semibold text-gray-700">
-                                        {totalReactions}
-                                      </span>
-                                    </div>
-                                  )}
+                                    )}
 
-                                  {totalComments > 0 && (
-                                    <button
-                                      onClick={() => {
-                                        setShowFeedComments({
-                                          ...showFeedComments,
-                                          [post.id]: !showFeedComments[post.id],
-                                        });
-                                        if (!feedComments[post.id]) {
-                                          fetchFeedComments(post.id);
-                                        }
-                                      }}
-                                      className="text-gray-600 hover:text-gray-900 font-medium"
-                                    >
-                                      {totalComments}{" "}
-                                      {totalComments === 1
-                                        ? "comment"
-                                        : "comments"}
-                                    </button>
-                                  )}
-                                </div>
-                              )}
-
-                              {/* Action Buttons with Clear Labels */}
-                              <div className="mt-3 flex items-center gap-1 pt-3 border-t">
-                                {/* Like Button */}
-                                <button
-                                  onClick={() => {
-                                    handleFeedReaction(post.id, "like");
-                                    if (!feedReactions[post.id]) {
-                                      fetchFeedReactions(post.id);
-                                    }
-                                  }}
-                                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all ${feedReactions[post.id]?.like?.some(
-                                    (r) => r.user_name === user?.name,
-                                  )
-                                    ? "bg-red-50 text-red-600"
-                                    : "hover:bg-gray-50 text-gray-700"
-                                    }`}
-                                >
-                                  <Heart
-                                    className={`w-5 h-5 ${feedReactions[post.id]?.like?.some(
-                                      (r) => r.user_name === user?.name,
-                                    )
-                                      ? "fill-red-500 text-red-500"
-                                      : ""
-                                      }`}
-                                  />
-                                  <span className="text-sm font-semibold">
-                                    {feedReactions[post.id]?.like?.length > 0
-                                      ? `Like · ${feedReactions[post.id].like.length}`
-                                      : "Like"}
-                                  </span>
-                                </button>
-
-                                {/* Comment Button */}
-                                <button
-                                  onClick={() => {
-                                    setShowFeedComments({
-                                      ...showFeedComments,
-                                      [post.id]: !showFeedComments[post.id],
-                                    });
-                                    if (!feedComments[post.id]) {
-                                      fetchFeedComments(post.id);
-                                    }
-                                  }}
-                                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-all text-gray-700"
-                                >
-                                  <MessageCircle className="w-5 h-5" />
-                                  <span className="text-sm font-semibold">
-                                    {feedComments[post.id]?.length > 0
-                                      ? `Comment · ${feedComments[post.id].length}`
-                                      : "Comment"}
-                                  </span>
-                                </button>
-
-                                {/* Share/Recommend Button */}
-                                <button
-                                  onClick={() => {
-                                    handleFeedReaction(post.id, "recommend");
-                                    if (!feedReactions[post.id]) {
-                                      fetchFeedReactions(post.id);
-                                    }
-                                  }}
-                                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all ${feedReactions[post.id]?.recommend?.some(
-                                    (r) => r.user_name === user?.name,
-                                  )
-                                    ? "bg-indigo-50 text-indigo-600"
-                                    : "hover:bg-gray-50 text-gray-700"
-                                    }`}
-                                >
-                                  <Share2 className="w-5 h-5" />
-                                  <span className="text-sm font-semibold">
-                                    {feedReactions[post.id]?.recommend?.length >
-                                      0
-                                      ? `Share · ${feedReactions[post.id].recommend.length}`
-                                      : "Share"}
-                                  </span>
-                                </button>
-                              </div>
-
-                              {/* Comment Preview (before full comments section) */}
-                              {!showFeedComments[post.id] &&
-                                feedComments[post.id]?.length > 0 && (
-                                  <div className="mt-3 px-3 py-2 bg-gray-50 rounded-lg">
-                                    <div className="flex items-start gap-2">
-                                      <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-xs flex-shrink-0">
-                                        {getInitial(feedComments[post.id]?.[0]?.user_name)}
-                                      </div>
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-sm text-gray-900">
-                                          <span className="font-semibold">
-                                            {feedComments[post.id][0].user_name}
-                                          </span>{" "}
-                                          <span className="text-gray-700 line-clamp-1">
-                                            {feedComments[post.id][0].comment}
-                                          </span>
-                                        </p>
-                                        {feedComments[post.id].length > 1 && (
-                                          <button
-                                            onClick={() => {
-                                              setShowFeedComments({
-                                                ...showFeedComments,
-                                                [post.id]: true,
-                                              });
-                                            }}
-                                            className="text-xs text-gray-600 hover:text-gray-900 font-medium mt-1"
-                                          >
-                                            View{" "}
-                                            {feedComments[post.id].length > 2
-                                              ? `all ${feedComments[post.id].length}`
-                                              : "1 more"}{" "}
-                                            comment
-                                            {feedComments[post.id].length > 2
-                                              ? "s"
-                                              : ""}
-                                          </button>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-                            </>
-                          );
-                        })()}
-
-                        {/* Comments Section */}
-                        {showFeedComments[post.id] && (
-                          <div className="mt-3 border-t pt-3 space-y-3">
-                            {/* Add Comment Input */}
-                            {user && (
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  value={newFeedComment}
-                                  onChange={(e) =>
-                                    setNewFeedComment(e.target.value)
-                                  }
-                                  onKeyPress={(e) => {
-                                    if (
-                                      e.key === "Enter" &&
-                                      newFeedComment.trim()
-                                    ) {
-                                      handleAddFeedComment(post.id);
-                                    }
-                                  }}
-                                  placeholder="Write a comment..."
-                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                                />
-                              </div>
-                            )}
-
-                            {/* Comments List */}
-                            {feedComments[post.id]?.map((comment) => (
-                              <div key={comment.id}>
-                                {/* Parent Comment */}
-                                <div className="flex gap-2">
-                                  <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">
-
-                                    {getInitial(comment.user_name)}
-                                  </div>
-                                  <div className="flex-1 bg-gray-50 rounded-lg p-2">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className="font-semibold text-sm text-gray-900">
-                                        {comment.user_name}
-                                      </span>
-                                      <span className="text-xs text-gray-500">
-                                        {new Date(
-                                          comment.created_at,
-                                        ).toLocaleTimeString()}
-                                      </span>
-                                      {user &&
-                                        user.name === comment.user_name && (
-                                          <button
-                                            onClick={() =>
-                                              handleDeleteFeedComment(
-                                                comment.id,
-                                                post.id,
-                                              )
-                                            }
-                                            className="text-red-600 hover:text-red-800 text-xs ml-auto"
-                                          >
-                                            Delete
-                                          </button>
-                                        )}
-                                    </div>
-                                    <p className="text-sm text-gray-900">
-                                      {comment.comment}
-                                    </p>
-                                    {user && (
+                                    {totalComments > 0 && (
                                       <button
-                                        onClick={() =>
-                                          setReplyingToFeed(comment.id)
-                                        }
-                                        className="text-xs text-gray-900 hover:text-indigo-700 font-medium mt-1"
+                                        onClick={() => {
+                                          setShowFeedComments({
+                                            ...showFeedComments,
+                                            [post.id]: !showFeedComments[post.id],
+                                          });
+                                          if (!feedComments[post.id]) {
+                                            fetchFeedComments(post.id);
+                                          }
+                                        }}
+                                        className="text-gray-600 hover:text-gray-900 font-medium"
                                       >
-                                        Reply
+                                        {totalComments}{" "}
+                                        {totalComments === 1
+                                          ? "comment"
+                                          : "comments"}
                                       </button>
                                     )}
                                   </div>
-                                </div>
-
-                                {/* Reply Input */}
-                                {replyingToFeed === comment.id && (
-                                  <div className="ml-10 mt-2 flex gap-2">
-                                    <input
-                                      type="text"
-                                      value={newFeedComment}
-                                      onChange={(e) =>
-                                        setNewFeedComment(e.target.value)
-                                      }
-                                      onKeyPress={(e) => {
-                                        if (
-                                          e.key === "Enter" &&
-                                          newFeedComment.trim()
-                                        ) {
-                                          handleAddFeedComment(
-                                            post.id,
-                                            comment.id,
-                                          );
-                                        }
-                                      }}
-                                      placeholder="Write a reply..."
-                                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                                      autoFocus
-                                    />
-                                  </div>
                                 )}
 
-                                {/* Replies */}
-                                {comment.replies?.map((reply) => (
-                                  <div
-                                    key={reply.id}
-                                    className="ml-10 mt-2 flex gap-2"
-                                  >
+                                {/* Action Buttons with Clear Labels */}
+<div className="mt-3 flex items-center gap-1 pt-3 border-t">
+  {/* Like Button */}
+  <button
+    onClick={() => {
+      handleFeedReaction(post.id, "like");
+    }}
+    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg transition-all ${
+      post.user_reacted
+        ? "bg-red-50 text-red-600"
+        : "hover:bg-gray-50 text-gray-700"
+    }`}
+  >
+    <Heart
+      className={`w-5 h-5 ${
+        post.user_reacted
+          ? "fill-red-500 text-red-500"
+          : ""
+      }`}
+    />
+    <span className="text-sm font-semibold">
+      {post.reaction_count > 0
+        ? `Like · ${post.reaction_count}`
+        : "Like"}
+    </span>
+  </button>
+
+  {/* Comment Button */}
+  <button
+    onClick={() => {
+      setShowFeedComments({
+        ...showFeedComments,
+        [post.id]: !showFeedComments[post.id],
+      });
+      if (!feedComments[post.id]) {
+        fetchFeedComments(post.id);
+      }
+    }}
+    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-all text-gray-700"
+  >
+    <MessageCircle className="w-5 h-5" />
+    <span className="text-sm font-semibold">
+      {post.comment_count > 0
+        ? `Comment · ${post.comment_count}`
+        : "Comment"}
+    </span>
+  </button>
+
+  {/* Share/Recommend Button */}
+  <button
+    onClick={() => {
+      // Share functionality - you can implement this later
+      showInfoToast("Share feature coming soon!");
+    }}
+    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-all text-gray-700"
+  >
+    <Share2 className="w-5 h-5" />
+    <span className="text-sm font-semibold">Share</span>
+  </button>
+</div>
+                                
+
+                                {/* Comment Preview (before full comments section) */}
+                                {!showFeedComments[post.id] &&
+                                  feedComments[post.id]?.length > 0 && (
+                                    <div className="mt-3 px-3 py-2 bg-gray-50 rounded-lg">
+                                      <div className="flex items-start gap-2">
+                                        <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-xs flex-shrink-0">
+                                          {getInitial(feedComments[post.id]?.[0]?.user_name)}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm text-gray-900">
+                                            <span className="font-semibold">
+                                              {feedComments[post.id][0].user_name}
+                                            </span>{" "}
+                                            <span className="text-gray-700 line-clamp-1">
+                                              {feedComments[post.id][0].comment}
+                                            </span>
+                                          </p>
+                                          {feedComments[post.id].length > 1 && (
+                                            <button
+                                              onClick={() => {
+                                                setShowFeedComments({
+                                                  ...showFeedComments,
+                                                  [post.id]: true,
+                                                });
+                                              }}
+                                              className="text-xs text-gray-600 hover:text-gray-900 font-medium mt-1"
+                                            >
+                                              View{" "}
+                                              {feedComments[post.id].length > 2
+                                                ? `all ${feedComments[post.id].length}`
+                                                : "1 more"}{" "}
+                                              comment
+                                              {feedComments[post.id].length > 2
+                                                ? "s"
+                                                : ""}
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                              </>
+                            );
+                          })()}
+
+                          {/* Comments Section */}
+                          {showFeedComments[post.id] && (
+                            <div className="mt-3 border-t pt-3 space-y-3">
+                              {/* Add Comment Input */}
+                              {user && (
+                                <div className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    value={newFeedComment}
+                                    onChange={(e) =>
+                                      setNewFeedComment(e.target.value)
+                                    }
+                                    onKeyPress={(e) => {
+                                      if (
+                                        e.key === "Enter" &&
+                                        newFeedComment.trim()
+                                      ) {
+                                        handleAddFeedComment(post.id);
+                                      }
+                                    }}
+                                    placeholder="Write a comment..."
+                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                                  />
+                                </div>
+                              )}
+
+                              {/* Comments List */}
+                              {feedComments[post.id]?.map((comment) => (
+                                <div key={comment.id}>
+                                  {/* Parent Comment */}
+                                  <div className="flex gap-2">
                                     <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">
 
-                                      {getInitial(reply.user_name)}
+                                      {getInitial(comment.user_name)}
                                     </div>
-                                    <div className="flex-1 bg-white rounded-lg p-2 border border-gray-200">
+                                    <div className="flex-1 bg-gray-50 rounded-lg p-2">
                                       <div className="flex items-center gap-2 mb-1">
                                         <span className="font-semibold text-sm text-gray-900">
-                                          {reply.user_name}
+                                          {comment.user_name}
                                         </span>
                                         <span className="text-xs text-gray-500">
                                           {new Date(
-                                            reply.created_at,
+                                            comment.created_at,
                                           ).toLocaleTimeString()}
                                         </span>
                                         {user &&
-                                          user.name === reply.user_name && (
+                                          user.name === comment.user_name && (
                                             <button
                                               onClick={() =>
                                                 handleDeleteFeedComment(
-                                                  reply.id,
+                                                  comment.id,
                                                   post.id,
                                                 )
                                               }
@@ -6114,18 +6034,97 @@ console.log('🔍 Headers:', headers);
                                           )}
                                       </div>
                                       <p className="text-sm text-gray-900">
-                                        {reply.comment}
+                                        {comment.comment}
                                       </p>
+                                      {user && (
+                                        <button
+                                          onClick={() =>
+                                            setReplyingToFeed(comment.id)
+                                          }
+                                          className="text-xs text-gray-900 hover:text-indigo-700 font-medium mt-1"
+                                        >
+                                          Reply
+                                        </button>
+                                      )}
                                     </div>
                                   </div>
-                                ))}
-                              </div>
-                            ))}
-                          </div>
-                        )}
+
+                                  {/* Reply Input */}
+                                  {replyingToFeed === comment.id && (
+                                    <div className="ml-10 mt-2 flex gap-2">
+                                      <input
+                                        type="text"
+                                        value={newFeedComment}
+                                        onChange={(e) =>
+                                          setNewFeedComment(e.target.value)
+                                        }
+                                        onKeyPress={(e) => {
+                                          if (
+                                            e.key === "Enter" &&
+                                            newFeedComment.trim()
+                                          ) {
+                                            handleAddFeedComment(
+                                              post.id,
+                                              comment.id,
+                                            );
+                                          }
+                                        }}
+                                        placeholder="Write a reply..."
+                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                                        autoFocus
+                                      />
+                                    </div>
+                                  )}
+
+                                  {/* Replies */}
+                                  {comment.replies?.map((reply) => (
+                                    <div
+                                      key={reply.id}
+                                      className="ml-10 mt-2 flex gap-2"
+                                    >
+                                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">
+
+                                        {getInitial(reply.user_name)}
+                                      </div>
+                                      <div className="flex-1 bg-white rounded-lg p-2 border border-gray-200">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <span className="font-semibold text-sm text-gray-900">
+                                            {reply.user_name}
+                                          </span>
+                                          <span className="text-xs text-gray-500">
+                                            {new Date(
+                                              reply.created_at,
+                                            ).toLocaleTimeString()}
+                                          </span>
+                                          {user &&
+                                            user.name === reply.user_name && (
+                                              <button
+                                                onClick={() =>
+                                                  handleDeleteFeedComment(
+                                                    reply.id,
+                                                    post.id,
+                                                  )
+                                                }
+                                                className="text-red-600 hover:text-red-800 text-xs ml-auto"
+                                              >
+                                                Delete
+                                              </button>
+                                            )}
+                                        </div>
+                                        <p className="text-sm text-gray-900">
+                                          {reply.comment}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -7443,7 +7442,7 @@ console.log('🔍 Headers:', headers);
   }
 
   // Explore Events View
-if (authLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -8981,7 +8980,7 @@ if (authLoading) {
   // }
 
   // My Events View (Bottom Nav)
-if (authLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -11590,7 +11589,7 @@ if (authLoading) {
                           )}
                           <div>
                             <div className="font-semibold text-gray-900 text-sm">
-                              {post.user_name}
+                              {post.user_name || post.user?.name || "Unknown User"}
                             </div>
                             <div className="text-xs text-gray-400">
                               {new Date(post.created_at).toLocaleDateString(
@@ -12084,7 +12083,7 @@ if (authLoading) {
   };
 
   // Organizer Dashboard View
-if (authLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -12129,7 +12128,7 @@ if (authLoading) {
 
     const myEvents = events.filter((e) => e.organizer === user.name);
 
-    
+
     return (
       <div className="min-h-screen bg-gray-50 pb-24">
         <header className="bg-white shadow-sm">
@@ -12718,36 +12717,36 @@ if (authLoading) {
   }
 
   // Authentication Gate - ADD IT HERE, AFTER organizer view closes
-if (!user && !authToken && view !== "login" && view !== "signup") {
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-md">
-        <ToastNotification />
-        <Calendar className="w-16 h-16 mx-auto text-indigo-600 mb-4" />
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Welcome to Happening
-        </h2>
-        <p className="text-gray-500 mb-6">
-          Please log in or sign up to continue
-        </p>
-        <div className="flex gap-3">
-          <button
-            onClick={() => setView("login")}
-            className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-semibold transition-all"
-          >
-            Login
-          </button>
-          <button
-            onClick={() => setView("signup")}
-            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold transition-all"
-          >
-            Sign Up
-          </button>
+  if (!user && !authToken && view !== "login" && view !== "signup") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-lg p-8 text-center max-w-md">
+          <ToastNotification />
+          <Calendar className="w-16 h-16 mx-auto text-indigo-600 mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Welcome to Happening
+          </h2>
+          <p className="text-gray-500 mb-6">
+            Please log in or sign up to continue
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setView("login")}
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-semibold transition-all"
+            >
+              Login
+            </button>
+            <button
+              onClick={() => setView("signup")}
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold transition-all"
+            >
+              Sign Up
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   return (
     <>
