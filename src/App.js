@@ -5634,6 +5634,7 @@ function App() {
                                     setModalEventTitle(
                                       post.name + "'s post",
                                     );
+                                    
                                     setShowImageModal(true);
                                   }}
                                 />
