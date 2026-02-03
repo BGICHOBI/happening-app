@@ -5515,13 +5515,13 @@ function App() {
                                 user?.profile_picture ? (
                                 <img
                                   src={user.profile_picture}
-                                  alt={post.user_name}
+                                  alt={post.name}
                                   className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 hover:border-indigo-400 transition-all"
                                 />
                               ) : (
                                 <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold hover:bg-gray-300 transition-all">
 
-                                  {getInitial(post.user_name)}
+                                  {getInitial(post.name)}
                                 </div>
                               )}
                             </div>
@@ -5533,7 +5533,7 @@ function App() {
                                   }}
                                   className="font-bold text-gray-900 hover:text-indigo-600 transition-colors cursor-pointer"
                                 >
-                                  {post.user_name}
+                                  {post.name}
                                 </h3>
 
                                 {/* Live Badge */}
@@ -5581,7 +5581,7 @@ function App() {
                                 )}
                               </div>
                             </div>
-                            {user && user.name === post.user_name && (
+                            {user && user.name === post.name && (
                               <button
                                 onClick={() => deleteFeedPost(post.id)}
                                 className="text-red-600 hover:text-red-800"
@@ -5632,7 +5632,7 @@ function App() {
                                   onClick={() => {
                                     setModalImage(post.media_url);
                                     setModalEventTitle(
-                                      post.user_name + "'s post",
+                                      post.name + "'s post",
                                     );
                                     setShowImageModal(true);
                                   }}
@@ -11572,24 +11572,24 @@ function App() {
                             user?.profile_picture ? (
                             <img
                               src={user.profile_picture}
-                              alt={post.user_name}
+                              alt={post.name}
                               className="w-10 h-10 rounded-full object-cover border-2 border-indigo-200"
                             />
                           ) : post.user_profile_picture ? (
                             <img
                               src={post.user_profile_picture}
-                              alt={post.user_name}
+                              alt={post.name}
                               className="w-10 h-10 rounded-full object-cover border-2 border-indigo-200"
                             />
                           ) : (
                             <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
 
-                              {getInitial(post.user_name)}
+                              {getInitial(post.name)}
                             </div>
                           )}
                           <div>
                             <div className="font-semibold text-gray-900 text-sm">
-                              {post.user_name || post.user?.name || "Unknown User"}
+                              {post.name || post.user?.name || "Unknown User"}
                             </div>
                             <div className="text-xs text-gray-400">
                               {new Date(post.created_at).toLocaleDateString(
@@ -11605,7 +11605,7 @@ function App() {
                           </div>
                         </div>
 
-                        {user && user.name === post.user_name && (
+                        {user && user.name === post.name && (
                           <button
                             onClick={() => handleDeletePost(post.id)}
                             className="p-2 hover:bg-gray-100 rounded-lg transition-all"
@@ -11652,7 +11652,7 @@ function App() {
                             className="w-full max-h-[500px] object-cover cursor-pointer"
                             onClick={() => {
                               setModalImage(post.media_url);
-                              setModalEventTitle(post.user_name + "'s post");
+                              setModalEventTitle(post.name + "'s post");
                               setShowImageModal(true);
                             }}
                           />
