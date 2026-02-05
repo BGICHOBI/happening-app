@@ -36,6 +36,109 @@ import {
   CheckCircle,
 } from "lucide-react";
 
+// Isolated Comment Input Component
+const CommentInput = React.memo(({ postId, onSubmit, authToken, API_URL, showInfoToast, showSuccessToast, showErrorToast }) => {
+  const [inputValue, setInputValue] = useState('');
+  
+  const handleSubmit = async () => {
+    if (!inputValue.trim()) return;
+    
+    try {
+      const response = await fetch(
+        `${API_URL}/api/feed-comments`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify({
+            post_id: postId,
+            content: inputValue.trim(),
+            parent_comment_id: null,
+          }),
+        },
+      );
+
+      if (response.ok) {
+        setInputValue('');
+        onSubmit(postId);
+        showSuccessToast("Comment added!");
+      }
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      showErrorToast("Failed to add comment");
+    }
+  };
+
+  return (
+    <div className="flex gap-2">
+      <input
+        type="text"
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        onKeyPress={(e) => {
+          if (e.key === "Enter" && inputValue.trim()) {
+            handleSubmit();
+          }
+        }}
+        placeholder="Write a comment..."
+        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+      />
+      <button
+        onClick={handleSubmit}
+        disabled={!inputValue.trim()}
+        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+      >
+        <Send className="w-4 h-4" />
+        <span className="hidden sm:inline">Send</span>
+      </button>
+    </div>
+  );
+});
+
+// Memoized Post Component to prevent unnecessary re-renders
+const FeedPostItem = React.memo(({ 
+  post, 
+  user, 
+  events,
+  getInitial,
+  handleDeleteFeedComment,
+  handleAddFeedComment,
+  deleteFeedPost,
+  getTrendingScore,
+  getDiscussionCount,
+  feedReactions,
+  feedComments,
+  showFeedComments,
+  setShowFeedComments,
+  commentInputs,
+  replyingToFeed,
+  setReplyingToFeed,
+  replyText,
+  setCommentInputs,
+  setReplyText,
+  authToken,
+  API_URL,
+  setModalImage,
+  setModalEventTitle,
+  setShowImageModal,
+  setView,
+  showErrorToast,
+  Send
+}) => {
+  const event = events.find(e => e.id === post.event_id);
+  
+  return (
+    <div
+      key={post.id}
+      className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+    >
+      {/* We'll fill this in next step */}
+    </div>
+  );
+});
+
 const categories = [
   { id: "all", name: "All Events", icon: Menu },
   { id: "music", name: "Music", icon: Music },
@@ -193,9 +296,10 @@ function App() {
   const [feedReactions, setFeedReactions] = useState({});
   const [feedComments, setFeedComments] = useState({});
   const [showFeedComments, setShowFeedComments] = useState({});
-  const [newFeedComment, setNewFeedComment] = useState("");
-  const [replyingToFeed, setReplyingToFeed] = useState(null);
-
+const [commentInputs, setCommentInputs] = useState({});
+const [replyingToFeed, setReplyingToFeed] = useState(null);
+const [replyText, setReplyText] = useState("");
+const commentInputRefs = useRef({});
   const [showPassword, setShowPassword] = useState(false);
 
   // Add these new states:
@@ -1748,48 +1852,54 @@ function App() {
     }
   };
 
-  // Polling for real-time updates
-  const startPolling = (eventId) => {
-    const interval = setInterval(async () => {
-      // Fetch from both sources during polling
-      try {
-        const [feedPostsResponse, eventPostsResponse] = await Promise.all([
-          fetch(`${API_URL}/api/feed-posts`),
-          fetch(`${API_URL}/api/posts/event/${eventId}`),
-        ]);
+ // Polling for real-time updates
+const startPolling = (eventId) => {
+  const interval = setInterval(async () => {
+    // Fetch from both sources during polling
+    try {
+      const [feedPostsResponse, eventPostsResponse] = await Promise.all([
+        fetch(`${API_URL}/api/feed-posts`),
+        fetch(`${API_URL}/api/posts/event/${eventId}`),
+      ]);
 
-        let allPosts = [];
+      let allPosts = [];
 
-        if (feedPostsResponse.ok) {
-          const feedData = await feedPostsResponse.json();
-          const eventFeedPosts = feedData.filter(
-            (post) => post.event_id === eventId,
-          );
-          allPosts = [...eventFeedPosts];
-        }
-
-        if (eventPostsResponse.ok) {
-          const eventData = await eventPostsResponse.json();
-          allPosts = [...allPosts, ...eventData];
-        }
-
-        const uniquePosts = allPosts.filter(
-          (post, index, self) =>
-            index === self.findIndex((p) => p.id === post.id),
+      if (feedPostsResponse.ok) {
+        const feedData = await feedPostsResponse.json();
+        const eventFeedPosts = feedData.filter(
+          (post) => post.event_id === eventId,
         );
-
-        uniquePosts.sort(
-          (a, b) => new Date(b.created_at) - new Date(a.created_at),
-        );
-        setPosts(uniquePosts);
-      } catch (error) {
-        console.error("Error polling posts:", error);
+        allPosts = [...eventFeedPosts];
       }
-    }, 5000); // Poll every 5 seconds
 
-    return interval;
-  };
+      if (eventPostsResponse.ok) {
+        const eventData = await eventPostsResponse.json();
+        allPosts = [...allPosts, ...eventData];
+      }
 
+      const uniquePosts = allPosts.filter(
+        (post, index, self) =>
+          index === self.findIndex((p) => p.id === post.id),
+      );
+
+      uniquePosts.sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at),
+      );
+      
+      // Only update if posts actually changed
+      setPosts(prevPosts => {
+        if (JSON.stringify(prevPosts) === JSON.stringify(uniquePosts)) {
+          return prevPosts; // Return same reference to prevent re-render
+        }
+        return uniquePosts;
+      });
+    } catch (error) {
+      console.error("Error polling posts:", error);
+    }
+  }, 5000); // Poll every 5 seconds
+
+  return interval;
+};
   // Get Time Until Event
   const getTimeUntilEvent = (event) => {
     if (!event || !event.date || !event.time) return null;
@@ -1816,6 +1926,47 @@ function App() {
       return null;
     }
   };
+
+const handleDeleteFeedComment = async (commentId, postId) => {
+  if (!authToken) {
+    showInfoToast("Please login to delete comments");
+    return;
+  }
+
+  if (!window.confirm("Delete this comment?")) {
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `${API_URL}/api/feed-comments/${commentId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      },
+    );
+
+    if (response.ok) {
+      await fetchFeedComments(postId);
+      
+      // Update comment count in feed
+      setFeedPosts(prevPosts => 
+        prevPosts.map(post => 
+          post.id === postId 
+            ? { ...post, comment_count: Math.max((post.comment_count || 0) - 1, 0) }
+            : post
+        )
+      );
+      
+      showSuccessToast("Comment deleted");
+    }
+  } catch (error) {
+    console.error("Error deleting comment:", error);
+    showErrorToast("Failed to delete comment");
+  }
+};
 
   // Get Phase Badge Config
   const getEventPhaseBadge = (phase) => {
@@ -2623,12 +2774,14 @@ function App() {
         }
 
         setFeedPosts(data);
-        // ✨ NEW: Fetch reaction counts for all posts
-        if (authToken) {
-          data.forEach(post => {
-            fetchFeedReactions(post.id);
-          });
-        }
+       if (authToken) {
+  // Only fetch reactions for posts we don't have yet
+  data.forEach(post => {
+    if (!feedReactions[post.id]) {
+      fetchFeedReactions(post.id);
+    }
+  });
+}
       }
     } catch (error) {
       console.error("Error fetching feed:", error);
@@ -2810,13 +2963,19 @@ function App() {
       `${API_URL}/api/feed-comments/${postId}`,
       {
         headers: {
-          'Authorization': `Bearer ${authToken}` // ✅ Added auth header
+          'Authorization': `Bearer ${authToken}`
         }
       }
     );
     if (response.ok) {
       const data = await response.json();
-      setFeedComments((prev) => ({ ...prev, [postId]: data }));
+      setFeedComments((prev) => {
+        // Only update if data actually changed
+        if (JSON.stringify(prev[postId]) === JSON.stringify(data)) {
+          return prev; // Return same reference to prevent re-render
+        }
+        return { ...prev, [postId]: data };
+      });
     }
   } catch (error) {
     console.error("Error fetching comments:", error);
@@ -2842,13 +3001,15 @@ function App() {
   }
 };
 
-  const handleAddFeedComment = async (postId, parentCommentId = null) => {
+ const handleAddFeedComment = async (postId, parentCommentId = null) => {
   if (!authToken) {
     showInfoToast("Please login to comment");
     return;
   }
 
-  if (!newFeedComment.trim()) {
+  const commentText = parentCommentId ? replyText : commentInputs[postId];
+  
+  if (!commentText?.trim()) {
     return;
   }
 
@@ -2862,19 +3023,38 @@ function App() {
           Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify({
-          post_id: postId,        // ✅ Changed from postId to post_id
-          content: newFeedComment, // ✅ Changed from comment to content
-          parent_comment_id: parentCommentId, // ✅ Changed to snake_case
+          post_id: postId,
+          content: commentText.trim(),
+          parent_comment_id: parentCommentId,
         }),
       },
     );
 
     if (response.ok) {
-      setNewFeedComment("");
-      setReplyingToFeed(null);
-      await fetchFeedComments(postId);
+      const newComment = await response.json();
       
-      // ✅ Update comment count in feed
+      // Clear the appropriate input
+      if (parentCommentId) {
+        setReplyText("");
+        setReplyingToFeed(null);
+      } else {
+        setCommentInputs(prev => ({
+          ...prev,
+          [postId]: ''
+        }));
+        
+        // Refocus the input after state update
+        setTimeout(() => {
+          if (commentInputRefs.current[postId]) {
+            commentInputRefs.current[postId].focus();
+          }
+        }, 0);
+      }
+      
+      // Fetch fresh comments instead of optimistic update
+      fetchFeedComments(postId);
+      
+      // Update comment count
       setFeedPosts(prevPosts => 
         prevPosts.map(post => 
           post.id === postId 
@@ -2882,50 +3062,14 @@ function App() {
             : post
         )
       );
+      
+      showSuccessToast(parentCommentId ? "Reply added!" : "Comment added!");
     }
   } catch (error) {
     console.error("Error adding comment:", error);
+    showErrorToast("Failed to add comment");
   }
 };
-
- 
-
-
-  const handleDeleteFeedComment = async (commentId, postId) => {
-    if (!authToken) return;
-
-    if (!window.confirm("Delete this comment?")) {
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `${API_URL}/api/feed-comments/${commentId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        },
-      );
-
-      if (response.ok) {
-        fetchFeedComments(postId);
-      }
-    } catch (error) {
-      console.error("Error deleting comment:", error);
-    }
-  };
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500">Loading events...</p>
-        </div>
-      </div>
-    );
-  }
 
   // Toast notification functions
   const showToast = (message, type = "info") => {
@@ -5537,7 +5681,6 @@ function App() {
                   {feedPosts.map((post) => {
                     const event = events.find(e => e.id === post.event_id);
                     return (
-                      console.log('Feed post data:', post),
                       <div
                         key={post.id}
                         className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
@@ -6015,38 +6158,31 @@ function App() {
                             );
                           })()}
 
-                          {/* Comments Section */}
-                          {showFeedComments[post.id] && (
-                            <div className="mt-3 border-t pt-3 space-y-3">
-                              {/* Add Comment Input */}
+                         
                             {/* Comments Section */}
 {showFeedComments[post.id] && (
   <div className="mt-3 border-t pt-3 space-y-3">
-    {/* Add Comment Input - WITH SEND BUTTON */}
-    {user && (
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={newFeedComment}
-          onChange={(e) => setNewFeedComment(e.target.value)}
-          onKeyPress={(e) => {
-            if (e.key === "Enter" && newFeedComment.trim()) {
-              handleAddFeedComment(post.id);
-            }
-          }}
-          placeholder="Write a comment..."
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-        />
-        <button
-          onClick={() => handleAddFeedComment(post.id)}
-          disabled={!newFeedComment.trim()}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-        >
-          <Send className="w-4 h-4" />
-          <span className="hidden sm:inline">Send</span>
-        </button>
-      </div>
-    )}
+ {/* Add Comment Input - WITH SEND BUTTON */}
+{user && (
+  <CommentInput
+    postId={post.id}
+    onSubmit={(postId) => {
+      fetchFeedComments(postId);
+      setFeedPosts(prevPosts => 
+        prevPosts.map(p => 
+          p.id === postId 
+            ? { ...p, comment_count: (p.comment_count || 0) + 1 }
+            : p
+        )
+      );
+    }}
+    authToken={authToken}
+    API_URL={API_URL}
+    showInfoToast={showInfoToast}
+    showSuccessToast={showSuccessToast}
+    showErrorToast={showErrorToast}
+  />
+)}
 
     {/* Comments List */}
     {feedComments[post.id]?.map((comment) => (
@@ -6054,17 +6190,17 @@ function App() {
         {/* Parent Comment */}
         <div className="flex gap-2">
           <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">
-            {getInitial(comment.user_name)}
+            {getInitial(comment.name)}
           </div>
           <div className="flex-1 bg-gray-50 rounded-lg p-2">
             <div className="flex items-center gap-2 mb-1">
               <span className="font-semibold text-sm text-gray-900">
-                {comment.user_name}
+                {comment.name}
               </span>
               <span className="text-xs text-gray-500">
                 {new Date(comment.created_at).toLocaleTimeString()}
               </span>
-              {user && user.name === comment.user_name && (
+              {user && user.name === comment.name && (
                 <button
                   onClick={() => handleDeleteFeedComment(comment.id, post.id)}
                   className="text-red-600 hover:text-red-800 text-xs ml-auto"
@@ -6088,190 +6224,189 @@ function App() {
         </div>
 
         {/* Reply Input - WITH SEND BUTTON */}
-        {replyingToFeed === comment.id && (
-          <div className="ml-10 mt-2 flex gap-2">
-            <input
-              type="text"
-              value={newFeedComment}
-              onChange={(e) => setNewFeedComment(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === "Enter" && newFeedComment.trim()) {
-                  handleAddFeedComment(post.id, comment.id);
-                }
-              }}
-              placeholder="Write a reply..."
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-              autoFocus
-            />
-            <button
-              onClick={() => handleAddFeedComment(post.id, comment.id)}
-              disabled={!newFeedComment.trim()}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              <Send className="w-4 h-4" />
-              <span className="hidden sm:inline">Reply</span>
-            </button>
-          </div>
-        )}
+       {/* Reply Input - WITH SEND BUTTON */}
+{replyingToFeed === comment.id && (
+  <div className="ml-10 mt-2 flex gap-2">
+    <input
+      type="text"
+      value={replyText}
+      onChange={(e) => setReplyText(e.target.value)}
+      onKeyPress={(e) => {
+        if (e.key === "Enter" && replyText.trim()) {
+          handleAddFeedComment(post.id, comment.id);
+        }
+      }}
+      placeholder="Write a reply..."
+      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+      autoFocus
+    />
+    <button
+      onClick={() => handleAddFeedComment(post.id, comment.id)}
+      disabled={!replyText.trim()}
+      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+    >
+      <Send className="w-4 h-4" />
+      <span className="hidden sm:inline">Reply</span>
+    </button>
+    <button
+      onClick={() => {
+        setReplyingToFeed(null);
+        setReplyText('');
+      }}
+      className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-semibold"
+    >
+      Cancel
+    </button>
+  </div>
+)}
 
-        {/* Replies */}
-        {comment.replies?.map((reply) => (
-          <div key={reply.id} className="ml-10 mt-2 flex gap-2">
-            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">
-              {getInitial(reply.user_name)}
-            </div>
-            <div className="flex-1 bg-white rounded-lg p-2 border border-gray-200">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="font-semibold text-sm text-gray-900">
-                  {reply.user_name}
-                </span>
-                <span className="text-xs text-gray-500">
-                  {new Date(reply.created_at).toLocaleTimeString()}
-                </span>
-                {user && user.name === reply.user_name && (
-                  <button
-                    onClick={() => handleDeleteFeedComment(reply.id, post.id)}
-                    className="text-red-600 hover:text-red-800 text-xs ml-auto"
-                  >
-                    Delete
-                  </button>
-                )}
-              </div>
-              <p className="text-sm text-gray-900">
-                {reply.content}
-              </p>
-            </div>
-          </div>
-        ))}
+{/* Replies - FIXED to use reply.name */}
+{comment.replies?.map((reply) => (
+  <div key={reply.id} className="ml-10 mt-2 flex gap-2">
+    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">
+      {getInitial(reply.name)}
+    </div>
+    <div className="flex-1 bg-white rounded-lg p-2 border border-gray-200">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="font-semibold text-sm text-gray-900">
+          {reply.name}
+        </span>
+        <span className="text-xs text-gray-500">
+          {new Date(reply.created_at).toLocaleTimeString()}
+        </span>
+        {user && user.name === reply.name && (
+          <button
+            onClick={() => handleDeleteFeedComment(reply.id, post.id)}
+            className="text-red-600 hover:text-red-800 text-xs ml-auto"
+          >
+            Delete
+          </button>
+        )}
+      </div>
+      <p className="text-sm text-gray-900">
+        {reply.content}
+      </p>
+    </div>
+  </div>
+))}
+
       </div>
     ))}
   </div>
 )}
+{/* Comments List */}
+{feedComments[post.id]?.map((comment) => (
+  <div key={comment.id}>
+    {/* Parent Comment */}
+    <div className="flex gap-2">
+      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">
+        {getInitial(comment.name)}
+      </div>
+      <div className="flex-1 bg-gray-50 rounded-lg p-2">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="font-semibold text-sm text-gray-900">
+            {comment.name}
+          </span>
+          <span className="text-xs text-gray-500">
+            {new Date(comment.created_at).toLocaleTimeString()}
+          </span>
+          {user && user.name === comment.name && (
+            <button
+              onClick={() => handleDeleteFeedComment(comment.id, post.id)}
+              className="text-red-600 hover:text-red-800 text-xs ml-auto"
+            >
+              Delete
+            </button>
+          )}
+        </div>
+        <p className="text-sm text-gray-900">
+          {comment.content}
+        </p>
+        {user && (
+          <button
+            onClick={() => {
+              setReplyingToFeed(comment.id);
+              setReplyText('');
+            }}
+            className="text-xs text-gray-900 hover:text-indigo-700 font-medium mt-1"
+          >
+            Reply
+          </button>
+        )}
+      </div>
+    </div>
 
-                              {/* Comments List */}
-                              {feedComments[post.id]?.map((comment) => (
-                                <div key={comment.id}>
-                                  {/* Parent Comment */}
-                                  <div className="flex gap-2">
-                                    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">
+    {/* Reply Input - UPDATED TO USE replyText */}
+    {replyingToFeed === comment.id && (
+      <div className="ml-10 mt-2 flex gap-2">
+        <input
+          type="text"
+          value={replyText}
+          onChange={(e) => setReplyText(e.target.value)}
+          onKeyPress={(e) => {
+            if (e.key === "Enter" && replyText.trim()) {
+              handleAddFeedComment(post.id, comment.id);
+            }
+          }}
+          placeholder="Write a reply..."
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+          autoFocus
+        />
+        <button
+          onClick={() => handleAddFeedComment(post.id, comment.id)}
+          disabled={!replyText.trim()}
+          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          <Send className="w-4 h-4" />
+          <span className="hidden sm:inline">Reply</span>
+        </button>
+        <button
+          onClick={() => {
+            setReplyingToFeed(null);
+            setReplyText('');
+          }}
+          className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-semibold"
+        >
+          Cancel
+        </button>
+      </div>
+    )}
 
-                                      {getInitial(comment.user_name)}
-                                    </div>
-                                    <div className="flex-1 bg-gray-50 rounded-lg p-2">
-                                      <div className="flex items-center gap-2 mb-1">
-                                        <span className="font-semibold text-sm text-gray-900">
-                                          {comment.user_name}
-                                        </span>
-                                        <span className="text-xs text-gray-500">
-                                          {new Date(
-                                            comment.created_at,
-                                          ).toLocaleTimeString()}
-                                        </span>
-                                        {user &&
-                                          user.name === comment.user_name && (
-                                            <button
-                                              onClick={() =>
-                                                handleDeleteFeedComment(
-                                                  comment.id,
-                                                  post.id,
-                                                )
-                                              }
-                                              className="text-red-600 hover:text-red-800 text-xs ml-auto"
-                                            >
-                                              Delete
-                                            </button>
-                                          )}
-                                      </div>
-                                      <p className="text-sm text-gray-900">
-                                        {comment.content}
-                                      </p>
-                                      {user && (
-                                        <button
-                                          onClick={() =>
-                                            setReplyingToFeed(comment.id)
-                                          }
-                                          className="text-xs text-gray-900 hover:text-indigo-700 font-medium mt-1"
-                                        >
-                                          Reply
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {/* Reply Input */}
-                                  {replyingToFeed === comment.id && (
-                                    <div className="ml-10 mt-2 flex gap-2">
-                                      <input
-                                        type="text"
-                                        value={newFeedComment}
-                                        onChange={(e) =>
-                                          setNewFeedComment(e.target.value)
-                                        }
-                                        onKeyPress={(e) => {
-                                          if (
-                                            e.key === "Enter" &&
-                                            newFeedComment.trim()
-                                          ) {
-                                            handleAddFeedComment(
-                                              post.id,
-                                              comment.id,
-                                            );
-                                          }
-                                        }}
-                                        placeholder="Write a reply..."
-                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                                        autoFocus
-                                      />
-                                    </div>
-                                  )}
-
-                                  {/* Replies */}
-                                  {comment.replies?.map((reply) => (
-                                    <div
-                                      key={reply.id}
-                                      className="ml-10 mt-2 flex gap-2"
-                                    >
-                                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">
-
-                                        {getInitial(reply.user_name)}
-                                      </div>
-                                      <div className="flex-1 bg-white rounded-lg p-2 border border-gray-200">
-                                        <div className="flex items-center gap-2 mb-1">
-                                          <span className="font-semibold text-sm text-gray-900">
-                                            {reply.user_name}
-                                          </span>
-                                          <span className="text-xs text-gray-500">
-                                            {new Date(
-                                              reply.created_at,
-                                            ).toLocaleTimeString()}
-                                          </span>
-                                          {user &&
-                                            user.name === reply.user_name && (
-                                              <button
-                                                onClick={() =>
-                                                  handleDeleteFeedComment(
-                                                    reply.id,
-                                                    post.id,
-                                                  )
-                                                }
-                                                className="text-red-600 hover:text-red-800 text-xs ml-auto"
-                                              >
-                                                Delete
-                                              </button>
-                                            )}
-                                        </div>
-                                        <p className="text-sm text-gray-900">
-                                          {reply.content}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              ))}
+    {/* Replies - FIXED to use reply.name instead of reply.user_name */}
+    {comment.replies?.map((reply) => (
+      <div key={reply.id} className="ml-10 mt-2 flex gap-2">
+        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">
+          {getInitial(reply.name)}
+        </div>
+        <div className="flex-1 bg-white rounded-lg p-2 border border-gray-200">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-semibold text-sm text-gray-900">
+              {reply.name}
+            </span>
+            <span className="text-xs text-gray-500">
+              {new Date(reply.created_at).toLocaleTimeString()}
+            </span>
+            {user && user.name === reply.name && (
+              <button
+                onClick={() => handleDeleteFeedComment(reply.id, post.id)}
+                className="text-red-600 hover:text-red-800 text-xs ml-auto"
+              >
+                Delete
+              </button>
+            )}
+          </div>
+          <p className="text-sm text-gray-900">
+            {reply.content}
+          </p>
+        </div>
+      </div>
+    ))}
+  </div>
+))}
                             </div>
-                          )}
+                        
                         </div>
-                      </div>
+                    
                     );
                   })}
                 </div>
@@ -11936,12 +12071,12 @@ function App() {
                               <div key={comment.id} className="flex gap-2">
                                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-teal-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
 
-                                  {getInitial(comment.user_name)}
+                                  {getInitial(comment.name)}
                                 </div>
                                 <div className="flex-1">
                                   <div className="bg-gray-50 rounded-2xl px-3 py-2">
                                     <div className="font-semibold text-sm text-gray-900">
-                                      {comment.user_name}
+                                      {comment.name}
                                     </div>
                                     <p className="text-sm text-gray-700">
                                       {comment.content}
@@ -11971,7 +12106,7 @@ function App() {
                                       Reply
                                     </button>
                                     {user &&
-                                      user.name === comment.user_name && (
+                                      user.name === comment.name && (
                                         <button
                                           onClick={() =>
                                             handleDeleteComment(
@@ -11987,86 +12122,69 @@ function App() {
                                   </div>
 
                                   {/* Reply Input */}
-                                  {replyingTo === comment.id && (
-                                    <div className="flex gap-2 mt-2 ml-2">
-                                      <input
-                                        type="text"
-                                        placeholder="Write a reply..."
-                                        className="flex-1 px-3 py-2 bg-gray-50 border-0 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                                        onKeyPress={(e) => {
-                                          if (
-                                            e.key === "Enter" &&
-                                            e.target.value.trim()
-                                          ) {
-                                            handleAddComment(
-                                              post.id,
-                                              e.target.value,
-                                              comment.id,
-                                            );
-                                            e.target.value = "";
-                                            setReplyingTo(null);
-                                          }
-                                        }}
-                                        autoFocus
-                                      />
-                                    </div>
-                                  )}
-
+                                 {replyingToFeed === comment.id && (
+  <div className="ml-10 mt-2 flex gap-2">
+    <input
+      type="text"
+      value={replyText}
+      onChange={(e) => setReplyText(e.target.value)}
+      onKeyPress={(e) => {
+        if (e.key === "Enter" && replyText.trim()) {
+          handleAddFeedComment(post.id, comment.id);
+        }
+      }}
+      placeholder="Write a reply..."
+      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+      autoFocus
+    />
+    <button
+      onClick={() => handleAddFeedComment(post.id, comment.id)}
+      disabled={!replyText.trim()}
+      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+    >
+      <Send className="w-4 h-4" />
+      <span className="hidden sm:inline">Reply</span>
+    </button>
+    <button
+      onClick={() => {
+        setReplyingToFeed(null);
+        setReplyText('');
+      }}
+      className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-semibold"
+    >
+      Cancel
+    </button>
+  </div>
+)}
                                   {/* Replies */}
-                                  {comment.replies &&
-                                    comment.replies.length > 0 && (
-                                      <div className="ml-4 mt-2 space-y-2">
-                                        {comment.replies.map((reply) => (
-                                          <div
-                                            key={reply.id}
-                                            className="flex gap-2"
-                                          >
-                                            <div className="w-7 h-7 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-
-                                              {getInitial(reply.user_name)}
-                                            </div>
-                                            <div className="flex-1">
-                                              <div className="bg-white rounded-2xl px-3 py-2 border border-gray-100">
-                                                <div className="font-semibold text-xs text-gray-900">
-                                                  {reply.user_name}
-                                                </div>
-                                                <p className="text-xs text-gray-700">
-                                                  {reply.content}
-                                                </p>
-                                              </div>
-                                              <div className="flex items-center gap-3 mt-1 px-3">
-                                                <span className="text-xs text-gray-400">
-                                                  {new Date(
-                                                    reply.created_at,
-                                                  ).toLocaleDateString(
-                                                    "en-US",
-                                                    {
-                                                      month: "short",
-                                                      day: "numeric",
-                                                    },
-                                                  )}
-                                                </span>
-                                                {user &&
-                                                  user.name ===
-                                                  reply.user_name && (
-                                                    <button
-                                                      onClick={() =>
-                                                        handleDeleteComment(
-                                                          reply.id,
-                                                          post.id,
-                                                        )
-                                                      }
-                                                      className="text-xs text-gray-500 hover:text-red-600 font-semibold"
-                                                    >
-                                                      Delete
-                                                    </button>
-                                                  )}
-                                              </div>
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
+{comment.replies?.map((reply) => (
+  <div key={reply.id} className="ml-10 mt-2 flex gap-2">
+    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">
+      {getInitial(reply.name)}
+    </div>
+    <div className="flex-1 bg-white rounded-lg p-2 border border-gray-200">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="font-semibold text-sm text-gray-900">
+          {reply.name}
+        </span>
+        <span className="text-xs text-gray-500">
+          {new Date(reply.created_at).toLocaleTimeString()}
+        </span>
+        {user && user.name === reply.name && (
+          <button
+            onClick={() => handleDeleteFeedComment(reply.id, post.id)}
+            className="text-red-600 hover:text-red-800 text-xs ml-auto"
+          >
+            Delete
+          </button>
+        )}
+      </div>
+      <p className="text-sm text-gray-900">
+        {reply.content}
+      </p>
+    </div>
+  </div>
+))}
                                 </div>
                               </div>
                             ))}
