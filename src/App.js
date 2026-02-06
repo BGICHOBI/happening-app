@@ -466,9 +466,9 @@ const commentInputRefs = useRef({});
                       {post.content && (
                         <p className="text-gray-900 mb-2">{post.content}</p>
                       )}
-                      {post.media_url && (
+                      {(post.media_url || post.image) && (
                         <img
-                          src={post.media_url}
+                          src={(post.media_url || post.image)}
                           alt="Post"
                           className="w-full rounded-lg max-h-48 object-cover mb-2"
                         />
@@ -5783,7 +5783,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                           )}
 
                           {/* Post Media */}
-                          {post.media_url && (
+                          {(post.media_url || post.image) && (
                             <div className="mt-3">
                               {post.post_type === "video" ? (
                                 <video
@@ -5794,16 +5794,16 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                                     showErrorToast("Failed to load video");
                                   }}
                                 >
-                                  <source src={post.media_url} type="video/mp4" />
+                                  <source src={(post.media_url || post.image)} type="video/mp4" />
                                   <source
-                                    src={post.media_url}
+                                    src={(post.media_url || post.image)}
                                     type="video/webm"
                                   />
                                   Your browser does not support video playback.
                                 </video>
                               ) : (
                                 <img
-                                  src={post.media_url}
+                                  src={(post.media_url || post.image)}
                                   alt="Post media"
                                   className="w-full rounded-lg max-h-96 object-cover cursor-pointer hover:opacity-95 transition-opacity"
                                   loading="lazy"
@@ -5814,7 +5814,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                                     showErrorToast("Failed to load image");
                                   }}
                                   onClick={() => {
-                                    setModalImage(post.media_url);
+                                    setModalImage((post.media_url || post.image));
                                     setModalEventTitle(
                                       post.name + "'s post",
                                     );
@@ -8907,7 +8907,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                           <div className="flex items-center justify-between mb-2">
                             {/* Post Type Badge */}
                             <div className="flex items-center gap-2">
-                              {post.media_url && post.post_type === "photo" && (
+                              {(post.media_url || post.image) && post.post_type === "photo" && (
                                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">
                                   <svg
                                     className="w-3 h-3"
@@ -8925,7 +8925,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                                   Photo
                                 </span>
                               )}
-                              {post.media_url && post.post_type === "video" && (
+                              {(post.media_url || post.image) && post.post_type === "video" && (
                                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
                                   <svg
                                     className="w-3 h-3"
@@ -8943,7 +8943,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                                   Video
                                 </span>
                               )}
-                              {!post.media_url && (
+                              {!(post.media_url || post.image) && (
                                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold">
                                   <MessageCircle className="w-3 h-3" />
                                   Text
@@ -9005,21 +9005,21 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                               {post.content}
                             </p>
                           )}
-                          {post.media_url && (
+                          {(post.media_url || post.image) && (
                             <div className="rounded-lg overflow-hidden mb-3">
                               {post.post_type === "video" ? (
                                 <video
-                                  src={post.media_url}
+                                  src={(post.media_url || post.image)}
                                   controls
                                   className="w-full max-h-80 object-cover"
                                 />
                               ) : (
                                 <img
-                                  src={post.media_url}
+                                  src={(post.media_url || post.image)}
                                   alt="Post media"
                                   className="w-full max-h-80 object-cover cursor-pointer hover:opacity-95 transition-opacity"
                                   onClick={() => {
-                                    setModalImage(post.media_url);
+                                    setModalImage((post.media_url || post.image));
                                     setModalEventTitle(post.event_title);
                                     setShowImageModal(true);
                                   }}
@@ -11486,7 +11486,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
         return;
       }
 
-      if (!newPost.content && !newPost.media_url) {
+      if (!newPost.content && !new(post.media_url || post.image)) {
         showInfoToast("Please add content or upload a photo");
         return;
       }
@@ -11502,7 +11502,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
             eventId: selectedEvent.id,
             type: newPost.type,
             content: newPost.content,
-            media_url: newPost.media_url,
+            media_url: new(post.media_url || post.image),
           }),
         });
 
@@ -11743,17 +11743,17 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                 />
               </div>
 
-              {newPost.media_url && (
+              {new(post.media_url || post.image) && (
                 <div className="mb-3 relative rounded-lg overflow-hidden">
                   {newPost.type === "video" ? (
                     <video
-                      src={newPost.media_url}
+                      src={new(post.media_url || post.image)}
                       controls
                       className="w-full max-h-80 object-cover"
                     />
                   ) : (
                     <img
-                      src={newPost.media_url}
+                      src={new(post.media_url || post.image)}
                       alt="Upload"
                       className="w-full max-h-80 object-cover"
                     />
@@ -11828,7 +11828,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                   onClick={handleCreatePost}
                   disabled={
                     uploadingPost ||
-                    (!newPost.content.trim() && !newPost.media_url)
+                    (!newPost.content.trim() && !new(post.media_url || post.image))
                   }
                   className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full font-semibold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -11936,22 +11936,22 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                     </div>
 
                     {/* Post Media - Full Width */}
-                    {post.media_url && (
+                    {(post.media_url || post.image) && (
                       <div className="w-full">
                         {post.type === "video" ? (
                           <video
-                            src={post.media_url}
+                            src={(post.media_url || post.image)}
                             controls
                             className="w-full max-h-[500px] object-cover bg-black"
                             playsInline
                           />
                         ) : (
                           <img
-                            src={post.media_url}
+                            src={(post.media_url || post.image)}
                             alt="Post"
                             className="w-full max-h-[500px] object-cover cursor-pointer"
                             onClick={() => {
-                              setModalImage(post.media_url);
+                              setModalImage((post.media_url || post.image));
                               setModalEventTitle(post.name + "'s post");
                               setShowImageModal(true);
                             }}
