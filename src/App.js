@@ -6632,7 +6632,6 @@ const handleDeleteFeedComment = async (commentId, postId) => {
   <input
     type="file"
     accept="image/*"
-    capture="environment" // Enable camera on mobile
     className="hidden"
     onChange={async (e) => {
       const file = e.target.files[0];
@@ -8830,7 +8829,6 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                     type="file"
                     className="hidden"
                     accept="image/*"
-                    capture="environment"
                     onChange={(e) => {
                       const file = e.target.files[0];
                       if (file) handleProfilePictureUpload(file);
@@ -12596,7 +12594,6 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                     type="file"
                     className="hidden"
                     accept="image/*"
-                    capture="environment"
                     onChange={(e) => {
                       const file = e.target.files[0];
                       if (file) {
