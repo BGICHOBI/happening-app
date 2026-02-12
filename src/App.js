@@ -65,6 +65,43 @@ const getEventCTA = (event) => {
   }
 };
 
+// Check if online event is currently live
+const isEventLive = (event) => {
+  if (event.event_type !== 'online' && event.event_type !== 'hybrid') {
+    return false;
+  }
+
+  const now = new Date();
+  const eventDate = new Date(event.date);
+  const [hours, minutes] = event.time.split(':');
+  eventDate.setHours(parseInt(hours), parseInt(minutes), 0);
+
+  // Event is live if it's within the event time + 3 hours buffer
+  const eventEnd = new Date(eventDate.getTime() + (3 * 60 * 60 * 1000));
+  
+  return now >= eventDate && now <= eventEnd;
+};
+
+// Get time until event starts
+const getTimeUntilEvent = (event) => {
+  const now = new Date();
+  const eventDate = new Date(event.date);
+  const [hours, minutes] = event.time.split(':');
+  eventDate.setHours(parseInt(hours), parseInt(minutes), 0);
+
+  const diff = eventDate - now;
+  
+  if (diff < 0) return null; // Event has passed
+  
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hoursLeft = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutesLeft = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  
+  if (days > 0) return `${days}d ${hoursLeft}h`;
+  if (hoursLeft > 0) return `${hoursLeft}h ${minutesLeft}m`;
+  return `${minutesLeft}m`;
+};
+
 // Event Type Badge Component
 const EventTypeBadge = ({ eventType }) => {
   const badges = {
@@ -7605,9 +7642,11 @@ const handleDeleteFeedComment = async (commentId, postId) => {
               </button>
             </div>
 
-           {/* Primary CTA - Dynamic based on Event Type */}
-<div className={`rounded-2xl shadow-2xl p-6 text-white ${
-  selectedEvent.event_type === 'contribution_based' 
+     {/* Primary CTA - Dynamic based on Event Type with Live Status */}
+<div className={`rounded-2xl shadow-2xl p-6 text-white relative overflow-hidden ${
+  isEventLive(selectedEvent) && (selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid')
+    ? 'bg-gradient-to-r from-red-600 to-red-800 animate-pulse'
+    : selectedEvent.event_type === 'contribution_based' 
     ? 'bg-gradient-to-r from-pink-600 to-red-600'
     : selectedEvent.event_type === 'online'
     ? 'bg-gradient-to-r from-blue-600 to-indigo-600'
@@ -7615,17 +7654,38 @@ const handleDeleteFeedComment = async (commentId, postId) => {
     ? 'bg-gradient-to-r from-purple-600 to-indigo-600'
     : 'bg-gradient-to-r from-indigo-600 to-purple-600'
 }`}>
-  <div className="flex items-center justify-between mb-4">
+  
+  {/* Live Status Banner */}
+  {isEventLive(selectedEvent) && (selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid') && (
+    <div className="absolute top-0 left-0 right-0 bg-white/20 backdrop-blur-sm py-2 px-4 flex items-center justify-center gap-2">
+      <span className="w-3 h-3 bg-white rounded-full animate-pulse"></span>
+      <span className="font-bold text-sm">EVENT IS LIVE NOW</span>
+    </div>
+  )}
+
+  <div className={`flex items-center justify-between ${isEventLive(selectedEvent) ? 'mt-8' : ''} mb-4`}>
     <div>
       <div className="text-sm opacity-90 mb-1">
-        {selectedEvent.event_type === 'contribution_based' ? 'Support this cause' :
-         selectedEvent.event_type === 'online' ? 'Join virtually' :
-         selectedEvent.event_type === 'ticketed' ? 'Ready to join?' :
-         'Attend this event'}
+        {isEventLive(selectedEvent) && (selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid')
+          ? 'Happening right now!'
+          : selectedEvent.event_type === 'contribution_based' 
+          ? 'Support this cause' 
+          : selectedEvent.event_type === 'online' 
+          ? 'Join virtually' 
+          : selectedEvent.event_type === 'ticketed' 
+          ? 'Ready to join?' 
+          : 'Attend this event'}
       </div>
       <div className="text-3xl font-bold">
         {selectedEvent.price}
       </div>
+      
+      {/* Countdown for upcoming online events */}
+      {!isEventLive(selectedEvent) && (selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid') && getTimeUntilEvent(selectedEvent) && (
+        <div className="text-sm opacity-90 mt-1">
+          Starts in {getTimeUntilEvent(selectedEvent)}
+        </div>
+      )}
     </div>
     {user && (
       <button
@@ -7674,6 +7734,8 @@ const handleDeleteFeedComment = async (commentId, postId) => {
     className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
       getEventCTA(selectedEvent).disabled
         ? 'bg-gray-400 cursor-not-allowed'
+        : isEventLive(selectedEvent) && (selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid')
+        ? 'bg-white text-red-600 hover:shadow-2xl transform hover:scale-105 animate-pulse'
         : 'bg-white hover:shadow-lg transform hover:scale-105'
     } ${
       selectedEvent.event_type === 'contribution_based' 
@@ -7684,25 +7746,28 @@ const handleDeleteFeedComment = async (commentId, postId) => {
     }`}
     disabled={getEventCTA(selectedEvent).disabled}
     onClick={() => {
-      if (selectedEvent.event_type === 'online' && selectedEvent.online_link) {
+      if ((selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid') && selectedEvent.online_link) {
         window.open(selectedEvent.online_link, '_blank');
+        if (user) handleRSVP(selectedEvent.id, 'going');
       } else {
         showInfoToast('Payment integration coming soon!');
       }
     }}
   >
-    {getEventCTA(selectedEvent).text}
+    {isEventLive(selectedEvent) && (selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid')
+      ? '🔴 Join Live Now'
+      : getEventCTA(selectedEvent).text}
   </button>
 
   {/* Online Event Link */}
-  {selectedEvent.event_type === 'online' && selectedEvent.online_link && (
+  {(selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid') && selectedEvent.online_link && (
     <div className="mt-3 text-center text-sm opacity-90">
-      Event will open in new window
+      {isEventLive(selectedEvent) ? 'Click to join the live event' : 'Event will open in new window'}
     </div>
   )}
 
   {/* Hybrid Options */}
-  {selectedEvent.event_type === 'hybrid' && (
+  {selectedEvent.event_type === 'hybrid' && !isEventLive(selectedEvent) && (
     <div className="grid grid-cols-2 gap-3 mt-3">
       <button className="bg-white/20 hover:bg-white/30 py-2 rounded-lg text-sm font-semibold transition-all">
         📍 Attend Physically
@@ -8708,6 +8773,14 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
 <div className="absolute top-14 left-3 flex flex-col gap-2 z-10">
   {/* Event Type Badge - NEW */}
   <EventTypeBadge eventType={event.event_type || 'open_attendance'} />
+
+   {/* Live Now Badge - NEW */}
+  {isEventLive(event) && (
+    <div className="bg-red-600 text-white text-xs px-2.5 py-1 rounded-full font-bold shadow-lg flex items-center gap-1 animate-pulse">
+      <span className="w-2 h-2 bg-white rounded-full"></span>
+      <span>LIVE NOW</span>
+    </div>
+  )}
   
   {event.verified && (
     <div className="bg-blue-500 text-white text-xs px-2.5 py-1 rounded-full font-bold shadow-lg flex items-center gap-1">
@@ -8859,14 +8932,26 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                             >
                               View Details
                             </button>
-                           <button 
+                        <button
   onClick={(e) => {
     e.stopPropagation();
-    const cta = getEventCTA(event);
+    
+    // Handle different event types
     if (event.event_type === 'online' && event.online_link) {
       window.open(event.online_link, '_blank');
+      if (user) handleRSVP(event.id, 'going');
     } else if (event.event_type === 'ticketed') {
-      showInfoToast('Payment integration coming soon!');
+      showInfoToast('Ticket purchase coming soon!');
+    } else if (event.event_type === 'contribution_based') {
+      showInfoToast('Contribution system coming soon!');
+    } else if (event.event_type === 'private_invite') {
+      if (user) {
+        showInfoToast('Invite request sent!');
+        handleRSVP(event.id, 'interested');
+      } else {
+        showInfoToast('Please login to request invite');
+        setView('login');
+      }
     } else {
       if (user) {
         handleRSVP(event.id, 'going');
@@ -8877,20 +8962,26 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
       }
     }
   }}
+  disabled={getEventCTA(event).disabled}
   className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all ${
     getEventCTA(event).disabled 
       ? 'bg-gray-400 text-white cursor-not-allowed'
+      : isEventLive(event) && (event.event_type === 'online' || event.event_type === 'hybrid')
+      ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse'
       : event.event_type === 'ticketed'
       ? 'bg-purple-600 hover:bg-purple-700 text-white'
       : event.event_type === 'contribution_based'
       ? 'bg-pink-600 hover:bg-pink-700 text-white'
       : event.event_type === 'online'
       ? 'bg-blue-600 hover:bg-blue-700 text-white'
-      : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+      : event.event_type === 'hybrid'
+      ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+      : 'bg-green-600 hover:bg-green-700 text-white'
   }`}
-  disabled={getEventCTA(event).disabled}
 >
-  {getEventCTA(event).text}
+  {isEventLive(event) && (event.event_type === 'online' || event.event_type === 'hybrid')
+    ? '🔴 Join Live Now'
+    : getEventCTA(event).text}
 </button>
                           </div>
                         </div>
