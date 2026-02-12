@@ -24,6 +24,7 @@ import {
   User as UserIcon,
   AlertCircle,
   MessageCircle,
+  ImageIcon, 
   UserPlus,
   UserCheck,
   UserX,
@@ -7187,104 +7188,113 @@ const handleDeleteFeedComment = async (commentId, postId) => {
         <ToastNotification />
 
         <div className="max-w-4xl mx-auto">
-          {/* Hero Banner with Full Image Option */}
-          <div className="relative h-[60vh] md:h-[70vh] max-h-[600px]">
-            {/* Background Image */}
-            <div
-              className="absolute inset-0 cursor-zoom-in group"
-              onClick={() => {
-                setModalImage(selectedEvent.image);
-                setModalEventTitle(selectedEvent.title);
-                setShowImageModal(true);
-              }}
-            >
-              <img
-                src={selectedEvent.image}
-                alt={selectedEvent.title}
-                className="w-full h-full object-cover"
-              />
+        {/* Hero Section - Immersive Poster */}
+<div className="relative h-[450px] md:h-[500px] overflow-hidden">
+  {/* Event Image with Better Gradient */}
+  <div
+    className="absolute inset-0 cursor-zoom-in group"
+    onClick={() => {
+      setModalImage(selectedEvent.image);
+      setModalEventTitle(selectedEvent.title);
+      setShowImageModal(true);
+    }}
+  >
+    <img
+      src={selectedEvent.image}
+      alt={selectedEvent.title}
+      className="w-full h-full object-cover"
+    />
 
-              {/* Gradient Overlay - Stronger for better text readability */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+    {/* Enhanced Gradient Overlay - Smoother blend */}
+    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/20"></div>
 
-              {/* Expand Hint */}
-              <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-semibold text-gray-900 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
-                <Eye className="w-4 h-4" />
-                <span>View full image</span>
-              </div>
-            </div>
+    {/* Expand Hint - Smaller, cleaner */}
+    <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5">
+      <Eye className="w-3.5 h-3.5" />
+      <span>View full</span>
+    </div>
+  </div>
 
-            {/* Event Title Overlay */}
-            <div className="absolute bottom-0 left-0 right-0 p-6">
-              <div className="max-w-4xl mx-auto">
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {/* ADD STATUS BADGE FIRST */}
-                  <EventStatusBadge event={selectedEvent} />
+  {/* Top Action Buttons - Cleaner positioning */}
+  <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-20">
+    <button
+      onClick={() => setView("discover")}
+      className="bg-black/40 backdrop-blur-md p-2.5 rounded-full hover:bg-black/60 transition-all"
+    >
+      <X className="w-5 h-5 text-white" />
+    </button>
 
-                  {selectedEvent.verified && (
-                    <div className="inline-flex items-center gap-1 bg-blue-500 text-white text-xs px-3 py-1.5 rounded-full font-bold">
-                      <span>✓ Verified</span>
-                    </div>
-                  )}
+    <div className="flex gap-2">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleShare(selectedEvent);
+        }}
+        className="bg-black/40 backdrop-blur-md p-2.5 rounded-full hover:bg-black/60 transition-all"
+      >
+        <Share2 className="w-5 h-5 text-white" />
+      </button>
 
-                  {selectedEvent.privacy &&
-                    selectedEvent.privacy !== "public" && (
-                      <div className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full font-bold">
-                        <span>
-                          {selectedEvent.privacy === "private"
-                            ? "Private"
-                            : "Invite Only"}
-                        </span>
-                      </div>
-                    )}
+      <button
+        onClick={() => handleLike(selectedEvent.id)}
+        className="bg-black/40 backdrop-blur-md p-2.5 rounded-full hover:bg-black/60 transition-all"
+      >
+        <Heart
+          className={`w-5 h-5 ${likedEvents.includes(selectedEvent.id) ? "fill-red-500 text-red-500" : "text-white"}`}
+        />
+      </button>
+    </div>
+  </div>
 
-                  <div className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full font-bold">
-                    <span>
-                      {selectedEvent.category?.toUpperCase() || "EVENT"}
-                    </span>
-                  </div>
-                </div>
+  {/* Title & Info Overlay - Bottom positioned */}
+  <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
+    <div className="max-w-4xl mx-auto">
+      {/* Status Badges - Horizontal row */}
+      <div className="flex flex-wrap gap-2 mb-3">
+        <EventStatusBadge event={selectedEvent} />
+        
+        {selectedEvent.verified && (
+          <div className="inline-flex items-center gap-1 bg-blue-500 text-white text-xs px-2.5 py-1 rounded-full font-semibold">
+            <span>✓ Verified</span>
+          </div>
+        )}
 
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-3 text-white drop-shadow-2xl leading-tight">
-                  {selectedEvent.title}
-                </h1>
+        <div className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm text-white text-xs px-2.5 py-1 rounded-full font-semibold">
+          <span>{selectedEvent.category?.toUpperCase() || "EVENT"}</span>
+        </div>
+      </div>
 
-                <div className="flex items-center gap-3 text-white/90">
-                  <span className="text-lg font-medium">
-                    by {selectedEvent.organizer}
-                  </span>
-                  {user && selectedEvent.organizer_id && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (
-                          isFollowing[`organizer-${selectedEvent.organizer_id}`]
-                        ) {
-                          handleUnfollow(
-                            "organizer",
-                            selectedEvent.organizer_id,
-                          );
-                        } else {
-                          handleFollow(
-                            "organizer",
-                            selectedEvent.organizer_id,
-                            selectedEvent.organizer,
-                          );
-                        }
-                      }}
-                      className={`${isFollowing[`organizer-${selectedEvent.organizer_id}`]
-                        ? "bg-white text-gray-900"
-                        : "bg-white/20 backdrop-blur-sm text-white hover:bg-white/30"
-                        } px-3 py-1.5 rounded-full text-sm font-semibold transition-all`}
-                    >
-                      {isFollowing[`organizer-${selectedEvent.organizer_id}`]
-                        ? "✓ Following"
-                        : "+ Follow"}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
+      {/* Event Title - Larger, bolder */}
+      <h1 className="text-4xl md:text-5xl font-black mb-3 text-white drop-shadow-2xl leading-tight">
+        {selectedEvent.title}
+      </h1>
+
+      {/* Organizer with Follow - Inline */}
+      <div className="flex items-center gap-3 text-white/95">
+        <span className="text-base font-medium">by {selectedEvent.organizer}</span>
+        {user && selectedEvent.organizer_id && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isFollowing[`organizer-${selectedEvent.organizer_id}`]) {
+                handleUnfollow("organizer", selectedEvent.organizer_id);
+              } else {
+                handleFollow("organizer", selectedEvent.organizer_id, selectedEvent.organizer);
+              }
+            }}
+            className={`${
+              isFollowing[`organizer-${selectedEvent.organizer_id}`]
+                ? "bg-white text-gray-900"
+                : "bg-white/25 backdrop-blur-sm text-white hover:bg-white/35"
+            } px-3 py-1 rounded-full text-xs font-semibold transition-all`}
+          >
+            {isFollowing[`organizer-${selectedEvent.organizer_id}`] ? "✓ Following" : "+ Follow"}
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+
 
             {/* Action Buttons */}
             <div className="absolute top-4 right-4 flex gap-2">
@@ -7319,139 +7329,115 @@ const handleDeleteFeedComment = async (commentId, postId) => {
           {/* Content Section */}
           <div className="px-4 -mt-8 relative z-10 space-y-4">
             {/* Quick Info Card */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Date */}
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Calendar className="w-6 h-6 text-indigo-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-xs text-gray-500 font-medium uppercase mb-1">
-                      Date & Time
-                    </div>
-                    <div className="font-bold text-gray-900">
-                      {new Date(selectedEvent.date).toLocaleDateString(
-                        "en-US",
-                        { month: "short", day: "numeric", year: "numeric" },
-                      )}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      {selectedEvent.time}
-                    </div>
-                  </div>
-                </div>
+            {/* Compact Metadata Strip */}
+<div className="bg-white rounded-2xl shadow-md p-4">
+  <div className="flex items-center justify-between gap-4 overflow-x-auto">
+    {/* Date */}
+    <div className="flex items-center gap-2 min-w-fit">
+      <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+        <Calendar className="w-5 h-5 text-indigo-600" />
+      </div>
+      <div>
+        <div className="text-xs text-gray-500 font-medium">
+          {new Date(selectedEvent.date).toLocaleDateString("en-US", { 
+            month: "short", 
+            day: "numeric" 
+          })}
+        </div>
+        <div className="text-sm font-bold text-gray-900">
+          {selectedEvent.time}
+        </div>
+      </div>
+    </div>
 
-                {/* Location */}
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <MapPin className="w-6 h-6 text-green-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-xs text-gray-500 font-medium uppercase mb-1">
-                      Location
-                    </div>
-                    <div className="font-bold text-gray-900 line-clamp-2">
-                      {selectedEvent.location}
-                    </div>
-                    <button className="text-sm text-indigo-600 hover:text-indigo-700 font-medium mt-1">
-                      View map →
-                    </button>
-                  </div>
-                </div>
+    {/* Divider */}
+    <div className="h-10 w-px bg-gray-200"></div>
 
-                {/* Price */}
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <svg
-                      className="w-6 h-6 text-purple-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
-                      />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-xs text-gray-500 font-medium uppercase mb-1">
-                      Ticket Price
-                    </div>
-                    <div className="font-bold text-gray-900 text-xl">
-                      {selectedEvent.price}
-                    </div>
-                    {selectedEvent.price?.toLowerCase().includes("free") && (
-                      <span className="inline-block mt-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">
-                        FREE EVENT
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
+    {/* Location */}
+    <div className="flex items-center gap-2 min-w-fit flex-1">
+      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+        <MapPin className="w-5 h-5 text-green-600" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-xs text-gray-500 font-medium">Location</div>
+        <div className="text-sm font-bold text-gray-900 truncate">
+          {selectedEvent.location}
+        </div>
+      </div>
+    </div>
 
-           {/* RSVP Card - Simplified with Single Action */}
-<div className="bg-white rounded-2xl shadow-lg p-6">
+    {/* Divider */}
+    <div className="h-10 w-px bg-gray-200"></div>
+
+    {/* Price */}
+    <div className="flex items-center gap-2 min-w-fit">
+      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+        <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+        </svg>
+      </div>
+      <div>
+        <div className="text-xs text-gray-500 font-medium">Price</div>
+        <div className="text-sm font-bold text-gray-900">
+          {selectedEvent.price}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+       {/* RSVP Section - Single Clean Card */}
+<div className="bg-white rounded-2xl shadow-md p-5">
   <div className="flex items-center justify-between mb-4">
     <div>
       <h3 className="text-lg font-bold text-gray-900">
-        {rsvpStatus[selectedEvent.id] === 'going' ? "You're Attending!" : "Join this event"}
+        {rsvpStatus[selectedEvent.id] === 'going' ? "You're Going!" : "Interested?"}
       </h3>
       <p className="text-sm text-gray-500">
-        {eventRSVPs[selectedEvent.id]?.going?.length || 0}{" "}
-        {(eventRSVPs[selectedEvent.id]?.going?.length || 0) === 1
-          ? "person is"
-          : "people are"}{" "}
-        attending
+        {eventRSVPs[selectedEvent.id]?.going?.length || 0} attending
       </p>
     </div>
 
     {/* Attendee Avatars */}
     {eventRSVPs[selectedEvent.id]?.going?.length > 0 && (
-      <div className="flex -space-x-3">
+      <div className="flex -space-x-2">
         {eventRSVPs[selectedEvent.id].going
-          .slice(0, 5)
+          .slice(0, 4)
           .map((attendee, idx) => (
             <div
               key={idx}
-              className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-white"
+              className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs border-2 border-white"
             >
               {getInitial(attendee.user_name)}
             </div>
           ))}
-        {eventRSVPs[selectedEvent.id].going.length > 5 && (
-          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold text-xs border-2 border-white">
-            +{eventRSVPs[selectedEvent.id].going.length - 5}
+        {eventRSVPs[selectedEvent.id].going.length > 4 && (
+          <div className="w-9 h-9 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold text-xs border-2 border-white">
+            +{eventRSVPs[selectedEvent.id].going.length - 4}
           </div>
         )}
       </div>
     )}
   </div>
 
-  {/* Single Primary Action Button */}
+  {/* Action Button */}
   {rsvpStatus[selectedEvent.id] === 'going' ? (
-    <div className="space-y-3">
-      <div className="flex items-center gap-3 p-4 bg-green-50 border-2 border-green-200 rounded-xl">
-        <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className="space-y-2">
+      <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl">
+        <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
         <div className="flex-1">
-          <div className="font-bold text-green-900">You're Attending</div>
-          <div className="text-sm text-green-700">See you there!</div>
+          <div className="font-semibold text-green-900 text-sm">Attending</div>
         </div>
       </div>
       
       <button
         onClick={() => handleRSVP(selectedEvent.id, 'not_going')}
-        className="w-full py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
+        className="w-full py-2.5 border border-gray-300 text-gray-700 text-sm rounded-xl font-medium hover:bg-gray-50 transition-all"
       >
-        Can't make it anymore
+        Cancel RSVP
       </button>
     </div>
   ) : (
@@ -7465,7 +7451,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
           setView('login');
         }
       }}
-      className={`w-full py-4 rounded-xl font-bold text-lg transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
+      className={`w-full py-3.5 rounded-xl font-bold transition-all shadow-sm hover:shadow-md transform hover:scale-[1.02] ${
         selectedEvent.event_type === 'ticketed'
           ? 'bg-purple-600 hover:bg-purple-700 text-white'
           : selectedEvent.event_type === 'contribution_based'
@@ -7483,21 +7469,20 @@ const handleDeleteFeedComment = async (commentId, postId) => {
     </button>
   )}
 
+  {/* See Attendees Link */}
   {eventRSVPs[selectedEvent.id]?.going?.length > 0 && (
     <button
       onClick={() => {
         setView("attendees");
         if (user && eventRSVPs[selectedEvent.id]) {
-          eventRSVPs[selectedEvent.id].going?.forEach(
-            (attendee) => {
-              if (attendee.user_id !== user.id) {
-                checkBuddyStatus(attendee.user_id);
-              }
-            },
-          );
+          eventRSVPs[selectedEvent.id].going?.forEach((attendee) => {
+            if (attendee.user_id !== user.id) {
+              checkBuddyStatus(attendee.user_id);
+            }
+          });
         }
       }}
-      className="w-full text-center text-sm text-indigo-600 hover:text-indigo-700 font-semibold py-2 mt-3"
+      className="w-full text-center text-sm text-indigo-600 hover:text-indigo-700 font-semibold py-2 mt-2"
     >
       See all attendees →
     </button>
@@ -7527,329 +7512,189 @@ const handleDeleteFeedComment = async (commentId, postId) => {
               )}
 
             {/* About Section */}
-            {selectedEvent.description && (
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">
-                  About This Event
-                </h2>
-                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                  {selectedEvent.description}
-                </p>
-              </div>
-            )}
-
-            {/* Lineup */}
-            {selectedEvent.lineup && selectedEvent.lineup.length > 0 && (
-              <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <span>🎵</span>
-                  Lineup
-                </h2>
-                <div className="flex flex-wrap gap-2">
-                  {selectedEvent.lineup.map((performer, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 px-4 py-2 rounded-full font-semibold"
-                    >
-                      {performer}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Social Actions - Lightweight */}
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={async () => {
-                  setView("event-feed");
-                  setPosts([]); // Clear old posts
-
-                  // Fetch posts from both sources
-                  try {
-                    const [feedPostsResponse, eventPostsResponse] =
-                      await Promise.all([
-                        fetch(`${API_URL}/api/feed-posts`),
-                        fetch(`${API_URL}/api/posts/event/${selectedEvent.id}`),
-                      ]);
-
-                    let allPosts = [];
-
-                    if (feedPostsResponse.ok) {
-                      const feedData = await feedPostsResponse.json();
-                      const eventFeedPosts = feedData.filter(
-                        (post) => post.event_id === selectedEvent.id,
-                      );
-                      allPosts = [...eventFeedPosts];
-                    }
-
-                    if (eventPostsResponse.ok) {
-                      const eventData = await eventPostsResponse.json();
-                      allPosts = [...allPosts, ...eventData];
-                    }
-
-                    const uniquePosts = allPosts.filter(
-                      (post, index, self) =>
-                        index === self.findIndex((p) => p.id === post.id),
-                    );
-
-                    uniquePosts.sort(
-                      (a, b) => new Date(b.created_at) - new Date(a.created_at),
-                    );
-                    setPosts(uniquePosts);
-                  } catch (error) {
-                    console.error("Error loading posts:", error);
-                  }
-
-                  const interval = startPolling(selectedEvent.id);
-                  setPollingInterval(interval);
-                }}
-                className="bg-white rounded-xl shadow-lg p-4 hover:shadow-xl transition-all group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center text-2xl">
-                    📸
-                  </div>
-                  <div className="text-left flex-1">
-                    <div className="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
-                      Event Feed
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Photos & updates
-                    </div>
-                  </div>
-                  <svg
-                    className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 transition-colors"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </div>
-              </button>
-
-              <button
-                onClick={() => {
-                  setView("event-chat");
-                  fetchEventMessages(selectedEvent.id);
-                  const interval = startChatPolling(selectedEvent.id);
-                  setPollingInterval(interval);
-                }}
-                className="bg-white rounded-xl shadow-lg p-4 hover:shadow-xl transition-all group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-xl flex items-center justify-center text-2xl">
-                    💬
-                  </div>
-                  <div className="text-left flex-1">
-                    <div className="font-bold text-gray-900 group-hover:text-green-600 transition-colors">
-                      Chat Room
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Connect with others
-                    </div>
-                  </div>
-                  <svg
-                    className="w-5 h-5 text-gray-400 group-hover:text-green-600 transition-colors"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </div>
-              </button>
-            </div>
-
-     {/* Primary CTA - Dynamic based on Event Type with Live Status */}
-<div className={`rounded-2xl shadow-2xl p-6 text-white relative overflow-hidden ${
-  isEventLive(selectedEvent) && (selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid')
-    ? 'bg-gradient-to-r from-red-600 to-red-800 animate-pulse'
-    : selectedEvent.event_type === 'contribution_based' 
-    ? 'bg-gradient-to-r from-pink-600 to-red-600'
-    : selectedEvent.event_type === 'online'
-    ? 'bg-gradient-to-r from-blue-600 to-indigo-600'
-    : selectedEvent.event_type === 'ticketed'
-    ? 'bg-gradient-to-r from-purple-600 to-indigo-600'
-    : 'bg-gradient-to-r from-indigo-600 to-purple-600'
-}`}>
-  
-  {/* Live Status Banner */}
-  {isEventLive(selectedEvent) && (selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid') && (
-    <div className="absolute top-0 left-0 right-0 bg-white/20 backdrop-blur-sm py-2 px-4 flex items-center justify-center gap-2">
-      <span className="w-3 h-3 bg-white rounded-full animate-pulse"></span>
-      <span className="font-bold text-sm">EVENT IS LIVE NOW</span>
-    </div>
-  )}
-
-  <div className={`flex items-center justify-between ${isEventLive(selectedEvent) ? 'mt-8' : ''} mb-4`}>
-    <div>
-      <div className="text-sm opacity-90 mb-1">
-        {isEventLive(selectedEvent) && (selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid')
-          ? 'Happening right now!'
-          : selectedEvent.event_type === 'contribution_based' 
-          ? 'Support this cause' 
-          : selectedEvent.event_type === 'online' 
-          ? 'Join virtually' 
-          : selectedEvent.event_type === 'ticketed' 
-          ? 'Ready to join?' 
-          : 'Attend this event'}
-      </div>
-      <div className="text-3xl font-bold">
-        {selectedEvent.price}
-      </div>
-      
-      {/* Countdown for upcoming online events */}
-      {!isEventLive(selectedEvent) && (selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid') && getTimeUntilEvent(selectedEvent) && (
-        <div className="text-sm opacity-90 mt-1">
-          Starts in {getTimeUntilEvent(selectedEvent)}
-        </div>
-      )}
-    </div>
-    {user && (
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          if (isFollowing[`event-${selectedEvent.id}`]) {
-            handleUnfollow('event', selectedEvent.id);
-          } else {
-            handleFollow('event', selectedEvent.id, selectedEvent.title);
-          }
-        }}
-        className={`${
-          isFollowing[`event-${selectedEvent.id}`]
-            ? 'bg-white text-indigo-600'
-            : 'bg-white/20 backdrop-blur-sm text-white hover:bg-white/30'
-        } px-4 py-2 rounded-full text-sm font-semibold transition-all`}
-      >
-        {isFollowing[`event-${selectedEvent.id}`] ? '✓ Following' : '+ Follow Event'}
-      </button>
-    )}
+           {/* About Section - More compact */}
+{selectedEvent.description && (
+  <div className="bg-white rounded-2xl shadow-md p-5">
+    <h2 className="text-lg font-bold text-gray-900 mb-3">
+      About
+    </h2>
+    <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
+      {selectedEvent.description}
+    </p>
   </div>
-
-  {/* Contribution Progress Bar (only for fundraisers) */}
-  {selectedEvent.event_type === 'contribution_based' && selectedEvent.contribution_goal && (
-    <div className="mb-4">
-      <div className="flex justify-between text-sm mb-2">
-        <span>KES {selectedEvent.contribution_raised?.toLocaleString() || 0} raised</span>
-        <span>Goal: KES {selectedEvent.contribution_goal?.toLocaleString()}</span>
-      </div>
-      <div className="w-full bg-white/30 rounded-full h-3">
-        <div 
-          className="bg-white h-3 rounded-full transition-all duration-500"
-          style={{ 
-            width: `${Math.min((selectedEvent.contribution_raised / selectedEvent.contribution_goal) * 100, 100)}%` 
-          }}
-        />
-      </div>
-      <div className="text-center text-sm mt-2">
-        {Math.round((selectedEvent.contribution_raised / selectedEvent.contribution_goal) * 100)}% funded
-      </div>
+)}
+            {/* Lineup */}
+           {selectedEvent.lineup && selectedEvent.lineup.length > 0 && (
+  <div className="bg-white rounded-2xl shadow-md p-5">
+    <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+      <span>🎵</span>
+      Lineup
+    </h2>
+    <div className="flex flex-wrap gap-2">
+      {selectedEvent.lineup.map((performer, idx) => (
+        <div
+          key={idx}
+          className="bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full font-medium text-sm"
+        >
+          {performer}
+        </div>
+      ))}
     </div>
-  )}
-
-{/* Capacity Progress Bar (for ticketed/capacity events) - NEW */}
-{selectedEvent.capacity && getCapacityInfo(selectedEvent) && (
-  <div className="mb-4">
-    <div className="flex justify-between text-sm mb-2">
-      <span>
-        {getCapacityInfo(selectedEvent).sold} tickets sold
-      </span>
-      <span className={getCapacityInfo(selectedEvent).isFull ? 'font-bold' : ''}>
-        {getCapacityInfo(selectedEvent).isFull 
-          ? 'SOLD OUT' 
-          : `${getCapacityInfo(selectedEvent).available} spots left`}
-      </span>
-    </div>
-    <div className="w-full bg-white/30 rounded-full h-3">
-      <div 
-        className={`h-3 rounded-full transition-all duration-500 ${
-          getCapacityInfo(selectedEvent).isFull
-            ? 'bg-gray-400'
-            : getCapacityInfo(selectedEvent).almostFull
-            ? 'bg-orange-400'
-            : 'bg-white'
-        }`}
-        style={{ 
-          width: `${Math.min(getCapacityInfo(selectedEvent).percentFull, 100)}%` 
-        }}
-      />
-    </div>
-    {getCapacityInfo(selectedEvent).almostFull && !getCapacityInfo(selectedEvent).isFull && (
-      <div className="text-center text-sm mt-2 font-bold animate-pulse">
-        ⚠️ Almost Full - Book Now!
-      </div>
-    )}
   </div>
 )}
 
-  {/* Dynamic CTA Button */}
-<button 
-  className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
-    getEventCTA(selectedEvent).disabled
-      ? 'bg-gray-600 text-white cursor-not-allowed opacity-75'
-      : isEventLive(selectedEvent) && (selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid')
-      ? 'bg-white text-red-600 hover:shadow-2xl transform hover:scale-105 animate-pulse'
-      : 'bg-white hover:shadow-lg transform hover:scale-105'
-  } ${
-    !getEventCTA(selectedEvent).disabled && (
-      selectedEvent.event_type === 'contribution_based' 
-        ? 'text-pink-600'
-        : selectedEvent.event_type === 'online'
-        ? 'text-blue-600'
-        : 'text-indigo-600'
-    )
-  }`}
-  disabled={getEventCTA(selectedEvent).disabled}
-  onClick={() => {
-    if (getEventCTA(selectedEvent).disabled) return;
-    
-    if ((selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid') && selectedEvent.online_link) {
-      window.open(selectedEvent.online_link, '_blank');
-      if (user) handleRSVP(selectedEvent.id, 'going');
-    } else {
-      showInfoToast('Payment integration coming soon!');
-    }
-  }}
->
-  {isEventLive(selectedEvent) && (selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid') && !getEventCTA(selectedEvent).disabled
-    ? '🔴 Join Live Now'
-    : getEventCTA(selectedEvent).text}
-</button>
-
-  {/* Online Event Link */}
-  {(selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid') && selectedEvent.online_link && (
-    <div className="mt-3 text-center text-sm opacity-90">
-      {isEventLive(selectedEvent) ? 'Click to join the live event' : 'Event will open in new window'}
+            {/* Social Actions - Lightweight */}
+          {/* Social Actions - Compact with Modern Icons */}
+<div className="grid grid-cols-2 gap-3">
+  <button
+    onClick={async () => {
+      setView("event-feed");
+      setPosts([]);
+      try {
+        const [feedPostsResponse, eventPostsResponse] = await Promise.all([
+          fetch(`${API_URL}/api/feed-posts`),
+          fetch(`${API_URL}/api/posts/event/${selectedEvent.id}`),
+        ]);
+        let allPosts = [];
+        if (feedPostsResponse.ok) {
+          const feedData = await feedPostsResponse.json();
+          const eventFeedPosts = feedData.filter((post) => post.event_id === selectedEvent.id);
+          allPosts = [...eventFeedPosts];
+        }
+        if (eventPostsResponse.ok) {
+          const eventData = await eventPostsResponse.json();
+          allPosts = [...allPosts, ...eventData];
+        }
+        const uniquePosts = allPosts.filter(
+          (post, index, self) => index === self.findIndex((p) => p.id === post.id)
+        );
+        uniquePosts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        setPosts(uniquePosts);
+      } catch (error) {
+        console.error("Error loading posts:", error);
+      }
+      const interval = startPolling(selectedEvent.id);
+      setPollingInterval(interval);
+    }}
+    className="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition-all group"
+  >
+    <div className="flex items-center gap-3">
+      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+        <ImageIcon className="w-5 h-5 text-white" />
+      </div>
+      <div className="text-left flex-1">
+        <div className="font-semibold text-gray-900 text-sm group-hover:text-blue-600 transition-colors">
+          Event Feed
+        </div>
+        <div className="text-xs text-gray-500">Photos & updates</div>
+      </div>
     </div>
-  )}
+  </button>
 
-  {/* Hybrid Options */}
-  {selectedEvent.event_type === 'hybrid' && !isEventLive(selectedEvent) && (
-    <div className="grid grid-cols-2 gap-3 mt-3">
-      <button className="bg-white/20 hover:bg-white/30 py-2 rounded-lg text-sm font-semibold transition-all">
-        📍 Attend Physically
-      </button>
-      <button 
-        className="bg-white/20 hover:bg-white/30 py-2 rounded-lg text-sm font-semibold transition-all"
-        onClick={() => selectedEvent.online_link && window.open(selectedEvent.online_link, '_blank')}
-      >
-        🌐 Watch Online
-      </button>
+  <button
+    onClick={() => {
+      setView("event-chat");
+      fetchEventMessages(selectedEvent.id);
+      const interval = startChatPolling(selectedEvent.id);
+      setPollingInterval(interval);
+    }}
+    className="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition-all group"
+  >
+    <div className="flex items-center gap-3">
+      <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-600 rounded-lg flex items-center justify-center">
+        <MessageCircle className="w-5 h-5 text-white" />
+      </div>
+      <div className="text-left flex-1">
+        <div className="font-semibold text-gray-900 text-sm group-hover:text-green-600 transition-colors">
+          Chat Room
+        </div>
+        <div className="text-xs text-gray-500">Connect with others</div>
+      </div>
     </div>
-  )}
+  </button>
 </div>
+
+{/* Spacer for sticky CTA */}
+<div className="h-24"></div>
+
+          </div>
+        </div>
+
+    {/* Sticky Bottom CTA Bar */}
+        <div className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-40 px-4 py-3">
+          <div className="max-w-4xl mx-auto flex items-center gap-3">
+            {/* Event Price/Type Info */}
+            <div className="flex-1 min-w-0">
+              <div className="text-xs text-gray-500 font-medium">
+                {selectedEvent.event_type === 'contribution_based' 
+                  ? 'Support this cause' 
+                  : selectedEvent.event_type === 'online' 
+                  ? 'Join virtually' 
+                  : selectedEvent.event_type === 'ticketed' 
+                  ? 'Get your spot' 
+                  : 'Attend this event'}
+              </div>
+              <div className="text-lg font-bold text-gray-900 truncate">
+                {selectedEvent.price}
+              </div>
+            </div>
+
+            {/* CTA Button */}
+            {rsvpStatus[selectedEvent.id] === 'going' ? (
+              <div className="flex items-center gap-2 bg-green-50 border border-green-200 px-4 py-2.5 rounded-xl">
+                <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <span className="font-bold text-green-900 text-sm whitespace-nowrap">You're Going</span>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  if (user) {
+                    if ((selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid') && selectedEvent.online_link && isEventLive(selectedEvent)) {
+                      window.open(selectedEvent.online_link, '_blank');
+                      handleRSVP(selectedEvent.id, 'going');
+                    } else if (selectedEvent.event_type === 'ticketed' || selectedEvent.event_type === 'contribution_based') {
+                      showInfoToast('Payment integration coming soon!');
+                    } else {
+                      handleRSVP(selectedEvent.id, 'going');
+                      showSuccessToast(`You're attending ${selectedEvent.title}!`);
+                    }
+                  } else {
+                    showInfoToast('Please login to RSVP');
+                    setView('login');
+                  }
+                }}
+                disabled={selectedEvent.capacity && selectedEvent.tickets_sold >= selectedEvent.capacity}
+                className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md hover:shadow-lg whitespace-nowrap ${
+                  selectedEvent.capacity && selectedEvent.tickets_sold >= selectedEvent.capacity
+                    ? 'bg-gray-400 text-white cursor-not-allowed'
+                    : isEventLive(selectedEvent) && (selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid')
+                    ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse'
+                    : selectedEvent.event_type === 'ticketed'
+                    ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                    : selectedEvent.event_type === 'contribution_based'
+                    ? 'bg-pink-600 hover:bg-pink-700 text-white'
+                    : selectedEvent.event_type === 'online'
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'bg-green-600 hover:bg-green-700 text-white'
+                }`}
+              >
+                {selectedEvent.capacity && selectedEvent.tickets_sold >= selectedEvent.capacity
+                  ? '🚫 Sold Out'
+                  : isEventLive(selectedEvent) && (selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid')
+                  ? '🔴 Join Live'
+                  : selectedEvent.event_type === 'ticketed'
+                  ? 'Get Tickets'
+                  : selectedEvent.event_type === 'contribution_based'
+                  ? 'Support'
+                  : selectedEvent.event_type === 'online'
+                  ? 'Register'
+                  : 'RSVP Now'}
+              </button>
+            )}
           </div>
         </div>
 
