@@ -36,6 +36,56 @@ import {
   CheckCircle,
 } from "lucide-react";
 
+// Helper function to get event CTA based on type
+const getEventCTA = (event) => {
+  const { event_type, capacity, tickets_sold } = event;
+
+  switch (event_type) {
+    case 'ticketed':
+      if (capacity && tickets_sold >= capacity) {
+        return { text: 'Sold Out', type: 'soldout', disabled: true };
+      }
+      return { text: 'Buy Tickets', type: 'ticketed', disabled: false };
+
+    case 'contribution_based':
+      return { text: 'Support Event', type: 'contribution', disabled: false };
+
+    case 'online':
+      // Check if event is happening now (simplified - you can enhance this)
+      return { text: 'Join Online', type: 'online', disabled: false };
+
+    case 'hybrid':
+      return { text: 'Choose Attendance', type: 'hybrid', disabled: false };
+
+    case 'private_invite':
+      return { text: 'Request Invite', type: 'private', disabled: false };
+
+    default: // open_attendance
+      return { text: 'RSVP Now', type: 'rsvp', disabled: false };
+  }
+};
+
+// Event Type Badge Component
+const EventTypeBadge = ({ eventType }) => {
+  const badges = {
+    ticketed: { icon: '🎟️', label: 'Ticketed', bgColor: 'bg-purple-500' },
+    open_attendance: { icon: '🎉', label: 'Free', bgColor: 'bg-green-500' },
+    contribution_based: { icon: '💝', label: 'Fundraiser', bgColor: 'bg-pink-500' },
+    online: { icon: '🌐', label: 'Online', bgColor: 'bg-blue-500' },
+    hybrid: { icon: '🔀', label: 'Hybrid', bgColor: 'bg-indigo-500' },
+    private_invite: { icon: '🔒', label: 'Private', bgColor: 'bg-gray-600' }
+  };
+
+  const badge = badges[eventType] || badges.open_attendance;
+
+  return (
+    <div className={`${badge.bgColor} text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg`}>
+      <span>{badge.icon}</span>
+      <span>{badge.label}</span>
+    </div>
+  );
+};
+
 // Isolated Comment Input Component
 const CommentInput = React.memo(({ postId, onSubmit, authToken, API_URL, showInfoToast, showSuccessToast, showErrorToast }) => {
   const [inputValue, setInputValue] = useState('');
@@ -172,6 +222,7 @@ function App() {
   const [likedEvents, setLikedEvents] = useState([]);
   const [rsvpStatus, setRsvpStatus] = useState({}); // Track RSVP status for each event
   const [eventRSVPs, setEventRSVPs] = useState({}); // Track all RSVPs for events
+  const [searchByTag, setSearchByTag] = useState(null);
 
   // ADD RECOMMENDATION STATES:
   const [recommendations, setRecommendations] = useState([]);
@@ -201,6 +252,15 @@ function App() {
   const [notifications, setNotifications] = useState([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [eventSearchQuery, setEventSearchQuery] = useState("");
+  const [eventType, setEventType] = useState('open_attendance');
+const [eventSettings, setEventSettings] = useState({});
+const [selectedTags, setSelectedTags] = useState([]);
+const suggestedTags = [
+  'music', 'party', 'nightlife', 'clubnight', 'concert', 
+  'festival', 'sports', 'tech', 'networking', 'conference',
+  'birthday', 'graduation', 'wedding', 'babyshower', 'fundraiser',
+  'harambee', 'charity', 'online', 'webinar', 'workshop'
+];
   // Event chat state
   const [eventMessages, setEventMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
@@ -266,6 +326,7 @@ function App() {
   // Explore page state
   const [exploreCategory, setExploreCategory] = useState("all");
   const [exploreSortBy, setExploreSortBy] = useState("upcoming"); // 'upcoming', 'trending', 'popular', 'nearby'
+  const [exploreEventType, setExploreEventType] = useState('all');
 
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilters, setActiveFilters] = useState({
@@ -331,18 +392,24 @@ const commentInputRefs = useRef({});
   });
   const [eventFormErrors, setEventFormErrors] = useState({});
 
-  const [newEvent, setNewEvent] = useState({
-    title: "",
-    category: "music",
-    date: "",
-    time: "",
-    location: "",
-    price: "",
-    description: "",
-    lineup: "",
-    image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800",
-    privacy: "public",
-  });
+const [newEvent, setNewEvent] = useState({
+  title: '',
+  category: '',
+  date: '',
+  time: '',
+  location: '',
+  price: '',
+  description: '',
+  lineup: '',
+  image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800',
+  privacy: 'public',
+  event_type: 'open_attendance',
+  visibility: 'public',
+  tags: [],
+  capacity: null,
+  contribution_goal: null,
+  online_link: '',
+});
 
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -1533,69 +1600,170 @@ const commentInputRefs = useRef({});
     );
   };
 
-  const handleCreateEvent = async () => {
-    if (!authToken) {
-      showInfoToast("Please login to create events");
-      setView("login");
+const handleCreateEvent = async () => {
+  try {
+    // Validation
+    const errors = {};
+    
+    if (!newEvent.title?.trim()) errors.title = 'Title is required';
+    if (!newEvent.date) errors.date = 'Date is required';
+    if (!newEvent.time) errors.time = 'Time is required';
+    if (!newEvent.location?.trim()) errors.location = 'Location is required';
+    
+    // Type-specific validation
+    if (eventType === 'ticketed' && !newEvent.price) {
+      errors.price = 'Price is required for ticketed events';
+    }
+    
+    if (eventType === 'contribution_based' && !newEvent.contribution_goal) {
+      showErrorToast('Fundraising goal is required');
       return;
     }
-
-    // Validate the form
-    const errors = validateEventForm(newEvent);
+    
+    if ((eventType === 'online' || eventType === 'hybrid') && !newEvent.online_link) {
+      showErrorToast('Online link is required for virtual events');
+      return;
+    }
 
     if (Object.keys(errors).length > 0) {
       setEventFormErrors(errors);
-      showErrorToast("Please fix the errors in the form");
+      showErrorToast('Please fill in all required fields');
       return;
     }
 
-    // Clear any previous errors
-    setEventFormErrors({});
+    // Prepare lineup array
+    const lineupArray = newEvent.lineup 
+      ? newEvent.lineup.split(',').map(item => item.trim()).filter(Boolean)
+      : [];
 
-    try {
-      const response = await fetch(`${API_URL}/api/events`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({
-          ...newEvent,
-          lineup: newEvent.lineup
-            .split(",")
-            .map((s) => s.trim())
-            .filter((s) => s),
-          privacy: newEvent.privacy || "public",
-        }),
-      });
+    // Prepare event data with all new fields
+    const eventData = {
+      title: newEvent.title.trim(),
+      date: newEvent.date,
+      time: newEvent.time,
+      location: newEvent.location.trim(),
+      price: newEvent.price || 'Free',
+      description: newEvent.description?.trim() || '',
+      lineup: lineupArray,
+      image: newEvent.image,
+      highlights: [],
+      
+      // NEW FIELDS FOR EVENT TYPES
+      event_type: eventType,
+      visibility: newEvent.visibility,
+      tags: selectedTags,
+      capacity: newEvent.capacity,
+      contribution_goal: newEvent.contribution_goal,
+      online_link: newEvent.online_link,
+      
+      // Event settings based on type
+      event_settings: {}
+    };
 
-      if (response.ok) {
-        await fetchEvents();
-        setNewEvent({
-          title: "",
-          category: "music",
-          date: "",
-          time: "",
-          location: "",
-          price: "",
-          description: "",
-          lineup: "",
-          image:
-            "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800",
-          privacy: "public",
-        });
-        setEventFormErrors({});
-        showSuccessToast("Event created successfully!");
-        setView("discover");
-      } else {
-        const data = await response.json();
-        showErrorToast(data.error || "Failed to create event");
-      }
-    } catch (error) {
-      console.error("Error creating event:", error);
-      showErrorToast("Failed to create event. Please try again.");
+    // Add type-specific event_settings
+    switch (eventType) {
+      case 'ticketed':
+        eventData.event_settings = {
+          requires_payment: true,
+          payment_methods: ['mpesa'],
+          qr_check_in: true
+        };
+        break;
+        
+      case 'open_attendance':
+        eventData.event_settings = {
+          rsvp_enabled: true,
+          requires_payment: false
+        };
+        break;
+        
+      case 'private_invite':
+        eventData.event_settings = {
+          invite_only: true,
+          requires_approval: true
+        };
+        eventData.visibility = 'private';
+        break;
+        
+      case 'contribution_based':
+        eventData.event_settings = {
+          payment_methods: ['mpesa'],
+          show_contributors: true
+        };
+        break;
+        
+      case 'online':
+        eventData.event_settings = {
+          platform: 'custom',
+          requires_registration: true,
+          countdown_enabled: true
+        };
+        break;
+        
+      case 'hybrid':
+        eventData.event_settings = {
+          physical_capacity: newEvent.capacity,
+          platform: 'custom'
+        };
+        break;
     }
-  };
+
+    console.log('Creating event with data:', eventData);
+
+    const response = await fetch(`${API_URL}/api/events`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify(eventData)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to create event');
+    }
+
+    // Success!
+    showSuccessToast('Event created successfully! 🎉');
+    
+    // Reset form
+    setNewEvent({
+      title: '',
+      category: '',
+      date: '',
+      time: '',
+      location: '',
+      price: '',
+      description: '',
+      lineup: '',
+      image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800',
+      privacy: 'public',
+      visibility: 'public',
+      event_type: 'open_attendance',
+      tags: [],
+      capacity: null,
+      contribution_goal: null,
+      online_link: '',
+    });
+    
+    setEventType('open_attendance');
+    setSelectedTags([]);
+    setEventFormErrors({});
+    
+    // Refresh events
+    await fetchEvents();
+    
+    // Navigate to the new event
+    setSelectedEvent(data);
+    setView('event-detail');
+
+  } catch (error) {
+    console.error('Create event error:', error);
+    showErrorToast(error.message || 'Failed to create event');
+  }
+};
 
   const handleDeleteEvent = async (eventId) => {
     if (!authToken) {
@@ -7421,44 +7589,117 @@ const handleDeleteFeedComment = async (commentId, postId) => {
               </button>
             </div>
 
-            {/* Primary CTA - Single Clear Action */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl shadow-2xl p-6 text-white">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <div className="text-sm opacity-90 mb-1">Ready to join?</div>
-                  <div className="text-3xl font-bold">
-                    {selectedEvent.price}
-                  </div>
-                </div>
-                {user && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (isFollowing[`event-${selectedEvent.id}`]) {
-                        handleUnfollow("event", selectedEvent.id);
-                      } else {
-                        handleFollow(
-                          "event",
-                          selectedEvent.id,
-                          selectedEvent.title,
-                        );
-                      }
-                    }}
-                    className={`${isFollowing[`event-${selectedEvent.id}`]
-                      ? "bg-white text-indigo-600"
-                      : "bg-white/20 backdrop-blur-sm text-white hover:bg-white/30"
-                      } px-4 py-2 rounded-full text-sm font-semibold transition-all`}
-                  >
-                    {isFollowing[`event-${selectedEvent.id}`]
-                      ? "✓ Following"
-                      : "+ Follow Event"}
-                  </button>
-                )}
-              </div>
-              <button className="w-full bg-white text-indigo-600 py-4 rounded-xl font-bold text-lg hover:shadow-lg transform hover:scale-105 transition-all">
-                Get Tickets
-              </button>
-            </div>
+           {/* Primary CTA - Dynamic based on Event Type */}
+<div className={`rounded-2xl shadow-2xl p-6 text-white ${
+  selectedEvent.event_type === 'contribution_based' 
+    ? 'bg-gradient-to-r from-pink-600 to-red-600'
+    : selectedEvent.event_type === 'online'
+    ? 'bg-gradient-to-r from-blue-600 to-indigo-600'
+    : selectedEvent.event_type === 'ticketed'
+    ? 'bg-gradient-to-r from-purple-600 to-indigo-600'
+    : 'bg-gradient-to-r from-indigo-600 to-purple-600'
+}`}>
+  <div className="flex items-center justify-between mb-4">
+    <div>
+      <div className="text-sm opacity-90 mb-1">
+        {selectedEvent.event_type === 'contribution_based' ? 'Support this cause' :
+         selectedEvent.event_type === 'online' ? 'Join virtually' :
+         selectedEvent.event_type === 'ticketed' ? 'Ready to join?' :
+         'Attend this event'}
+      </div>
+      <div className="text-3xl font-bold">
+        {selectedEvent.price}
+      </div>
+    </div>
+    {user && (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          if (isFollowing[`event-${selectedEvent.id}`]) {
+            handleUnfollow('event', selectedEvent.id);
+          } else {
+            handleFollow('event', selectedEvent.id, selectedEvent.title);
+          }
+        }}
+        className={`${
+          isFollowing[`event-${selectedEvent.id}`]
+            ? 'bg-white text-indigo-600'
+            : 'bg-white/20 backdrop-blur-sm text-white hover:bg-white/30'
+        } px-4 py-2 rounded-full text-sm font-semibold transition-all`}
+      >
+        {isFollowing[`event-${selectedEvent.id}`] ? '✓ Following' : '+ Follow Event'}
+      </button>
+    )}
+  </div>
+
+  {/* Contribution Progress Bar (only for fundraisers) */}
+  {selectedEvent.event_type === 'contribution_based' && selectedEvent.contribution_goal && (
+    <div className="mb-4">
+      <div className="flex justify-between text-sm mb-2">
+        <span>KES {selectedEvent.contribution_raised?.toLocaleString() || 0} raised</span>
+        <span>Goal: KES {selectedEvent.contribution_goal?.toLocaleString()}</span>
+      </div>
+      <div className="w-full bg-white/30 rounded-full h-3">
+        <div 
+          className="bg-white h-3 rounded-full transition-all duration-500"
+          style={{ 
+            width: `${Math.min((selectedEvent.contribution_raised / selectedEvent.contribution_goal) * 100, 100)}%` 
+          }}
+        />
+      </div>
+      <div className="text-center text-sm mt-2">
+        {Math.round((selectedEvent.contribution_raised / selectedEvent.contribution_goal) * 100)}% funded
+      </div>
+    </div>
+  )}
+
+  {/* Dynamic CTA Button */}
+  <button 
+    className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
+      getEventCTA(selectedEvent).disabled
+        ? 'bg-gray-400 cursor-not-allowed'
+        : 'bg-white hover:shadow-lg transform hover:scale-105'
+    } ${
+      selectedEvent.event_type === 'contribution_based' 
+        ? 'text-pink-600'
+        : selectedEvent.event_type === 'online'
+        ? 'text-blue-600'
+        : 'text-indigo-600'
+    }`}
+    disabled={getEventCTA(selectedEvent).disabled}
+    onClick={() => {
+      if (selectedEvent.event_type === 'online' && selectedEvent.online_link) {
+        window.open(selectedEvent.online_link, '_blank');
+      } else {
+        showInfoToast('Payment integration coming soon!');
+      }
+    }}
+  >
+    {getEventCTA(selectedEvent).text}
+  </button>
+
+  {/* Online Event Link */}
+  {selectedEvent.event_type === 'online' && selectedEvent.online_link && (
+    <div className="mt-3 text-center text-sm opacity-90">
+      Event will open in new window
+    </div>
+  )}
+
+  {/* Hybrid Options */}
+  {selectedEvent.event_type === 'hybrid' && (
+    <div className="grid grid-cols-2 gap-3 mt-3">
+      <button className="bg-white/20 hover:bg-white/30 py-2 rounded-lg text-sm font-semibold transition-all">
+        📍 Attend Physically
+      </button>
+      <button 
+        className="bg-white/20 hover:bg-white/30 py-2 rounded-lg text-sm font-semibold transition-all"
+        onClick={() => selectedEvent.online_link && window.open(selectedEvent.online_link, '_blank')}
+      >
+        🌐 Watch Online
+      </button>
+    </div>
+  )}
+</div>
           </div>
         </div>
 
@@ -7772,14 +8013,28 @@ const handleDeleteFeedComment = async (commentId, postId) => {
       { id: "entertainment", name: "Entertainment" },//, icon: "🎭" },
     ];
 
-    // Apply category filter first
-    let filteredEvents =
-      exploreCategory === "all"
-        ? events
-        : events.filter((e) => e.category?.toLowerCase() === exploreCategory);
+// Apply category filter first
+let filteredEvents =
+  exploreCategory === "all"
+    ? events
+    : events.filter((e) => e.category?.toLowerCase() === exploreCategory);
 
-    // Then apply advanced filters
-    filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
+// Apply event type filter
+if (exploreEventType !== 'all') {
+  filteredEvents = filteredEvents.filter((e) => 
+    (e.event_type || 'open_attendance') === exploreEventType
+  );
+}
+
+// Apply tag filter - NEW
+if (searchByTag) {
+  filteredEvents = filteredEvents.filter((e) => 
+    e.tags && e.tags.includes(searchByTag)
+  );
+}
+
+// Then apply advanced filters
+filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
 
     // Sort events
     // Sort events with priority
@@ -7913,6 +8168,19 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                 </button>
               </div>
             </div>
+
+{/* Tag Filter Badge - NEW */}
+{searchByTag && (
+  <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full text-sm font-semibold">
+    <span>🏷️ #{searchByTag}</span>
+    <button
+      onClick={() => setSearchByTag(null)}
+      className="hover:bg-indigo-200 rounded-full p-0.5"
+    >
+      <X className="w-3 h-3" />
+    </button>
+  </div>
+)}
 
             {/* Active Filters Display */}
             {(() => {
@@ -8064,6 +8332,94 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                 </div>
               );
             })()}
+
+
+            {/* Event Type Filters - NEW */}
+<div className="bg-white border-b py-3">
+  <div className="max-w-7xl mx-auto px-4">
+    <div className="flex items-center gap-2 mb-2">
+      <span className="text-sm font-semibold text-gray-700">Event Type:</span>
+    </div>
+    <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+      <button
+        onClick={() => setExploreEventType('all')}
+        className={`px-4 py-2 rounded-full font-semibold transition-all whitespace-nowrap ${
+          exploreEventType === 'all'
+            ? 'bg-gray-900 text-white'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        }`}
+      >
+        All Types
+      </button>
+      <button
+        onClick={() => setExploreEventType('open_attendance')}
+        className={`px-4 py-2 rounded-full font-semibold transition-all whitespace-nowrap flex items-center gap-1 ${
+          exploreEventType === 'open_attendance'
+            ? 'bg-green-500 text-white'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        }`}
+      >
+        <span>🎉</span>
+        <span>Free Events</span>
+      </button>
+      <button
+        onClick={() => setExploreEventType('ticketed')}
+        className={`px-4 py-2 rounded-full font-semibold transition-all whitespace-nowrap flex items-center gap-1 ${
+          exploreEventType === 'ticketed'
+            ? 'bg-purple-500 text-white'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        }`}
+      >
+        <span>🎟️</span>
+        <span>Ticketed</span>
+      </button>
+      <button
+        onClick={() => setExploreEventType('contribution_based')}
+        className={`px-4 py-2 rounded-full font-semibold transition-all whitespace-nowrap flex items-center gap-1 ${
+          exploreEventType === 'contribution_based'
+            ? 'bg-pink-500 text-white'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        }`}
+      >
+        <span>💝</span>
+        <span>Fundraisers</span>
+      </button>
+      <button
+        onClick={() => setExploreEventType('online')}
+        className={`px-4 py-2 rounded-full font-semibold transition-all whitespace-nowrap flex items-center gap-1 ${
+          exploreEventType === 'online'
+            ? 'bg-blue-500 text-white'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        }`}
+      >
+        <span>🌐</span>
+        <span>Online</span>
+      </button>
+      <button
+        onClick={() => setExploreEventType('hybrid')}
+        className={`px-4 py-2 rounded-full font-semibold transition-all whitespace-nowrap flex items-center gap-1 ${
+          exploreEventType === 'hybrid'
+            ? 'bg-indigo-500 text-white'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        }`}
+      >
+        <span>🔀</span>
+        <span>Hybrid</span>
+      </button>
+      <button
+        onClick={() => setExploreEventType('private_invite')}
+        className={`px-4 py-2 rounded-full font-semibold transition-all whitespace-nowrap flex items-center gap-1 ${
+          exploreEventType === 'private_invite'
+            ? 'bg-gray-600 text-white'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        }`}
+      >
+        <span>🔒</span>
+        <span>Private</span>
+      </button>
+    </div>
+  </div>
+</div>
 
             {/* Quick Filter Chips */}
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
@@ -8327,39 +8683,32 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                         {/* Gradient overlay on hover */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-                        {/* ADD STATUS BADGE HERE - Top Left, Above Other Badges */}
-                        <div className="absolute top-3 left-3 z-20">
-                          <EventStatusBadge event={event} />
-                        </div>
+                       {/* ADD STATUS BADGE HERE - Top Left, Above Other Badges */}
+<div className="absolute top-3 left-3 z-20">
+  <EventStatusBadge event={event} />
+</div>
 
-                        {/* Other Badges - Slightly Below Status Badge */}
-                        <div className="absolute top-14 left-3 flex flex-col gap-2 z-10">
-                          {event.verified && (
-                            <div className="bg-blue-500 text-white text-xs px-2.5 py-1 rounded-full font-bold shadow-lg flex items-center gap-1">
-                              <span>✓</span>
-                              <span>Verified</span>
-                            </div>
-                          )}
-
-                          {/* Privacy Badge with clearer distinction */}
-                          {event.privacy && event.privacy !== "public" && (
-                            <div
-                              className={`text-white text-xs px-2.5 py-1 rounded-full font-bold shadow-lg flex items-center gap-1 ${event.privacy === "private"
-                                ? "bg-gray-700"
-                                : "bg-indigo-600"
-                                }`}
-                            >
-                              <span>
-                                {event.privacy === "private" ? "🔒" : "📨"}
-                              </span>
-                              <span>
-                                {event.privacy === "private"
-                                  ? "Private"
-                                  : "Invite Only"}
-                              </span>
-                            </div>
-                          )}
-                        </div>
+{/* Other Badges - Slightly Below Status Badge */}
+<div className="absolute top-14 left-3 flex flex-col gap-2 z-10">
+  {/* Event Type Badge - NEW */}
+  <EventTypeBadge eventType={event.event_type || 'open_attendance'} />
+  
+  {event.verified && (
+    <div className="bg-blue-500 text-white text-xs px-2.5 py-1 rounded-full font-bold shadow-lg flex items-center gap-1">
+      <span>✓</span>
+      <span>Verified</span>
+    </div>
+  )}
+  
+  {event.privacy && event.privacy !== "public" && (
+    <div className={`text-white text-xs px-2.5 py-1 rounded-full font-bold shadow-lg flex items-center gap-1 ${
+      event.privacy === "private" ? "bg-gray-700" : "bg-indigo-600"
+    }`}>
+      <span>{event.privacy === "private" ? "🔒" : "📨"}</span>
+      <span>{event.privacy === "private" ? "Private" : "Invite Only"}</span>
+    </div>
+  )}
+</div>
 
                         {/* View Full Image hint on hover */}
                         <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-semibold text-gray-900 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-1">
@@ -8433,6 +8782,30 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                           </div>
                         </div>
 
+
+{/* Tags Display - NEW */}
+{event.tags && event.tags.length > 0 && (
+  <div className="flex flex-wrap gap-1 mb-3">
+    {event.tags.slice(0, 3).map((tag, idx) => (
+      <button
+        key={idx}
+        onClick={(e) => {
+          e.stopPropagation();
+          setSearchByTag(tag);
+          setView('explore');
+        }}
+        className="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded-full hover:bg-indigo-100 transition-all font-medium"
+      >
+        #{tag}
+      </button>
+    ))}
+    {event.tags.length > 3 && (
+      <span className="text-xs text-gray-400 px-2 py-1">
+        +{event.tags.length - 3} more
+      </span>
+    )}
+  </div>
+)}
                         {/* Enhanced CTA Section */}
                         <div className="pt-3 border-t space-y-2">
                           <div className="flex items-center justify-between">
@@ -12639,72 +13012,181 @@ const handleDeleteFeedComment = async (commentId, postId) => {
               </div>
 
               {/* Category and Privacy - Side by Side */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Category *
-                  </label>
-                  <select
-                    value={newEvent.category}
-                    onChange={(e) =>
-                      setNewEvent({ ...newEvent, category: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    required
-                  >
-                    <option value="">Select category</option>
-                    <option value="music">Music</option>
-                    <option value="sports">Sports</option>
-                    <option value="arts">Arts</option>
-                    <option value="food">Food & Drink</option>
-                    <option value="business">Business</option>
-                    <option value="tech">Technology</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
+             {/* Event Type Selector - NEW */}
+<div className="col-span-2">
+  <label className="block text-sm font-semibold text-gray-900 mb-3">
+    Event Type *
+  </label>
+  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+    {[
+      { type: 'open_attendance', icon: '🎉', label: 'Open to All', desc: 'Free event' },
+      { type: 'ticketed', icon: '🎟️', label: 'Ticketed', desc: 'Paid entry' },
+      { type: 'contribution_based', icon: '💝', label: 'Fundraiser', desc: 'Contributions' },
+      { type: 'private_invite', icon: '🔒', label: 'Private', desc: 'Invite only' },
+      { type: 'online', icon: '🌐', label: 'Online', desc: 'Virtual event' },
+      { type: 'hybrid', icon: '🔀', label: 'Hybrid', desc: 'Physical + Online' }
+    ].map(({ type, icon, label, desc }) => (
+      <button
+        key={type}
+        type="button"
+        onClick={() => {
+          setNewEvent({ ...newEvent, event_type: type });
+          setEventType(type);
+          // Auto-adjust price based on type
+          if (type === 'open_attendance' || type === 'private_invite') {
+            setNewEvent(prev => ({ ...prev, price: 'Free', event_type: type }));
+          } else if (type === 'contribution_based') {
+            setNewEvent(prev => ({ ...prev, price: 'Contribution-Based', event_type: type }));
+          }
+        }}
+        className={`p-3 rounded-xl border-2 transition-all text-left ${
+          eventType === type
+            ? 'border-indigo-600 bg-indigo-50'
+            : 'border-gray-200 hover:border-gray-300'
+        }`}
+      >
+        <div className="text-2xl mb-1">{icon}</div>
+        <div className="font-bold text-xs">{label}</div>
+        <div className="text-xs text-gray-500">{desc}</div>
+      </button>
+    ))}
+  </div>
+</div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Privacy *
-                  </label>
-                  <select
-                    value={newEvent.privacy}
-                    onChange={(e) =>
-                      setNewEvent({ ...newEvent, privacy: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    required
-                  >
-                    <option value="public">Public</option>
-                    <option value="invite">Invite Only</option>
-                  </select>
-                </div>
-              </div>
-
+{/* Visibility Dropdown - Keep this */}
+<div>
+  <label className="block text-sm font-semibold text-gray-900 mb-2">
+    Visibility *
+  </label>
+  <select
+    value={newEvent.visibility}
+    onChange={(e) => setNewEvent({ ...newEvent, visibility: e.target.value })}
+    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+    required
+  >
+    <option value="public">Public</option>
+    <option value="friends_only">Friends Only</option>
+    <option value="private">Private</option>
+    <option value="unlisted">Unlisted</option>
+  </select>
+</div>
               {/* Price - Smaller */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Price *
-                </label>
-                <input
-                  type="text"
-                  value={newEvent.price}
-                  onChange={(e) => {
-                    setNewEvent({ ...newEvent, price: e.target.value });
-                    if (eventFormErrors.price) {
-                      setEventFormErrors({ ...eventFormErrors, price: "" });
-                    }
-                  }}
-                  className={`w-full md:w-64 px-4 py-2.5 border ${eventFormErrors.price ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500`}
-                  placeholder="KES 2,000 or Free"
-                  required
-                />
-                {eventFormErrors.price && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {eventFormErrors.price}
-                  </p>
-                )}
-              </div>
+              {/* CONDITIONAL FIELDS BASED ON EVENT TYPE */}
+
+{/* Ticketed Event Settings */}
+{eventType === 'ticketed' && (
+  <div className="col-span-2 bg-purple-50 p-4 rounded-xl space-y-3">
+    <h3 className="font-bold text-gray-900 flex items-center gap-2">
+      🎟️ Ticket Settings
+    </h3>
+    
+    <div>
+      <label className="block text-sm font-medium mb-2">Ticket Price *</label>
+      <input
+        type="text"
+        value={newEvent.price}
+        onChange={(e) => setNewEvent({ ...newEvent, price: e.target.value })}
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        placeholder="KES 2,000"
+        required
+      />
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium mb-2">Capacity (optional)</label>
+      <input
+        type="number"
+        value={newEvent.capacity || ''}
+        onChange={(e) => setNewEvent({ ...newEvent, capacity: parseInt(e.target.value) || null })}
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        placeholder="Maximum tickets"
+      />
+    </div>
+  </div>
+)}
+
+{/* Contribution-Based Settings */}
+{eventType === 'contribution_based' && (
+  <div className="col-span-2 bg-pink-50 p-4 rounded-xl space-y-3">
+    <h3 className="font-bold text-gray-900 flex items-center gap-2">
+      💝 Fundraising Settings
+    </h3>
+    
+    <div>
+      <label className="block text-sm font-medium mb-2">Fundraising Goal (KES) *</label>
+      <input
+        type="number"
+        value={newEvent.contribution_goal || ''}
+        onChange={(e) => setNewEvent({ ...newEvent, contribution_goal: parseInt(e.target.value) || null })}
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        placeholder="50000"
+        required
+      />
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium mb-2">Suggested Contribution (KES)</label>
+      <input
+        type="text"
+        value={newEvent.price}
+        onChange={(e) => setNewEvent({ ...newEvent, price: e.target.value })}
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        placeholder="500 (Suggested)"
+      />
+    </div>
+  </div>
+)}
+
+{/* Online/Hybrid Event Settings */}
+{(eventType === 'online' || eventType === 'hybrid') && (
+  <div className="col-span-2 bg-blue-50 p-4 rounded-xl space-y-3">
+    <h3 className="font-bold text-gray-900 flex items-center gap-2">
+      🌐 Online Event Settings
+    </h3>
+    
+    <div>
+      <label className="block text-sm font-medium mb-2">
+        {eventType === 'hybrid' ? 'Livestream Link *' : 'Meeting/Stream Link *'}
+      </label>
+      <input
+        type="url"
+        value={newEvent.online_link}
+        onChange={(e) => setNewEvent({ ...newEvent, online_link: e.target.value })}
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        placeholder="https://zoom.us/j/... or YouTube link"
+        required
+      />
+    </div>
+
+    {eventType === 'hybrid' && (
+      <div>
+        <label className="block text-sm font-medium mb-2">Physical Capacity</label>
+        <input
+          type="number"
+          value={newEvent.capacity || ''}
+          onChange={(e) => setNewEvent({ ...newEvent, capacity: parseInt(e.target.value) || null })}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="Maximum physical attendees"
+        />
+      </div>
+    )}
+  </div>
+)}
+
+{/* Free Event - Show simplified price for open_attendance and private_invite */}
+{(eventType === 'open_attendance' || eventType === 'private_invite') && (
+  <div>
+    <label className="block text-sm font-semibold text-gray-900 mb-2">
+      Price
+    </label>
+    <input
+      type="text"
+      value="Free"
+      disabled
+      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+    />
+  </div>
+)}
 
               {/* Date and Time - Side by Side */}
               <div className="grid grid-cols-2 gap-4">
@@ -12815,18 +13297,21 @@ const handleDeleteFeedComment = async (commentId, postId) => {
 
             <div className="flex gap-3">
               <button
-                type="button"
-                onClick={handleCreateEvent}
-                disabled={
-                  !newEvent.title ||
-                  !newEvent.date ||
-                  !newEvent.time ||
-                  !newEvent.location ||
-                  !newEvent.price ||
-                  uploadingImage
-                }
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
+                  type="button"
+  onClick={handleCreateEvent}
+  disabled={
+    !newEvent.title ||
+    !newEvent.date ||
+    !newEvent.time ||
+    !newEvent.location ||
+    uploadingImage ||
+    // Type-specific validation
+    (eventType === 'ticketed' && !newEvent.price) ||
+    (eventType === 'contribution_based' && !newEvent.contribution_goal) ||
+    ((eventType === 'online' || eventType === 'hybrid') && !newEvent.online_link)
+  }
+  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+>
                 {uploadingImage ? (
                   <>
                     <LoadingSpinner size="sm" />
