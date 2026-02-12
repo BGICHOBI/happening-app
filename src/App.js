@@ -7327,99 +7327,115 @@ const handleDeleteFeedComment = async (commentId, postId) => {
               </div>
             </div>
 
-            {/* RSVP Card - Simplified & Social */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">
-                    Are you going?
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    {eventRSVPs[selectedEvent.id]?.going?.length || 0}{" "}
-                    {(eventRSVPs[selectedEvent.id]?.going?.length || 0) === 1
-                      ? "person is"
-                      : "people are"}{" "}
-                    going
-                  </p>
-                </div>
+           {/* RSVP Card - Simplified with Single Action */}
+<div className="bg-white rounded-2xl shadow-lg p-6">
+  <div className="flex items-center justify-between mb-4">
+    <div>
+      <h3 className="text-lg font-bold text-gray-900">
+        {rsvpStatus[selectedEvent.id] === 'going' ? "You're Attending!" : "Join this event"}
+      </h3>
+      <p className="text-sm text-gray-500">
+        {eventRSVPs[selectedEvent.id]?.going?.length || 0}{" "}
+        {(eventRSVPs[selectedEvent.id]?.going?.length || 0) === 1
+          ? "person is"
+          : "people are"}{" "}
+        attending
+      </p>
+    </div>
 
-                {/* Attendee Avatars */}
-                {eventRSVPs[selectedEvent.id]?.going?.length > 0 && (
-                  <div className="flex -space-x-3">
-                    {eventRSVPs[selectedEvent.id].going
-                      .slice(0, 5)
-                      .map((attendee, idx) => (
-                        <div
-                          key={idx}
-                          className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-white"
-                        >
-                          {getInitial(attendee.user_name)}
-                        </div>
-                      ))}
-                    {eventRSVPs[selectedEvent.id].going.length > 5 && (
-                      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold text-xs border-2 border-white">
-                        +{eventRSVPs[selectedEvent.id].going.length - 5}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                <button
-                  onClick={() => handleRSVP(selectedEvent.id, "going")}
-                  className={`py-3 rounded-xl font-semibold transition-all ${rsvpStatus[selectedEvent.id] === "going"
-                    ? "bg-green-600 text-white shadow-lg scale-105"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                >
-                  <div className="text-2xl mb-1">✓</div>
-                  <div className="text-sm">Going</div>
-                </button>
-
-                <button
-                  onClick={() => handleRSVP(selectedEvent.id, "maybe")}
-                  className={`py-3 rounded-xl font-semibold transition-all ${rsvpStatus[selectedEvent.id] === "maybe"
-                    ? "bg-yellow-600 text-white shadow-lg scale-105"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                >
-                  <div className="text-2xl mb-1">?</div>
-                  <div className="text-sm">Maybe</div>
-                </button>
-
-                <button
-                  onClick={() => handleRSVP(selectedEvent.id, "not_going")}
-                  className={`py-3 rounded-xl font-semibold transition-all ${rsvpStatus[selectedEvent.id] === "not_going"
-                    ? "bg-red-600 text-white shadow-lg scale-105"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                >
-                  <div className="text-2xl mb-1">✗</div>
-                  <div className="text-sm">Can't Go</div>
-                </button>
-              </div>
-
-              {eventRSVPs[selectedEvent.id]?.going?.length > 0 && (
-                <button
-                  onClick={() => {
-                    setView("attendees");
-                    if (user && eventRSVPs[selectedEvent.id]) {
-                      eventRSVPs[selectedEvent.id].going?.forEach(
-                        (attendee) => {
-                          if (attendee.user_id !== user.id) {
-                            checkBuddyStatus(attendee.user_id);
-                          }
-                        },
-                      );
-                    }
-                  }}
-                  className="w-full text-center text-sm text-indigo-600 hover:text-indigo-700 font-semibold py-2"
-                >
-                  See all attendees →
-                </button>
-              )}
+    {/* Attendee Avatars */}
+    {eventRSVPs[selectedEvent.id]?.going?.length > 0 && (
+      <div className="flex -space-x-3">
+        {eventRSVPs[selectedEvent.id].going
+          .slice(0, 5)
+          .map((attendee, idx) => (
+            <div
+              key={idx}
+              className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-white"
+            >
+              {getInitial(attendee.user_name)}
             </div>
+          ))}
+        {eventRSVPs[selectedEvent.id].going.length > 5 && (
+          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold text-xs border-2 border-white">
+            +{eventRSVPs[selectedEvent.id].going.length - 5}
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+
+  {/* Single Primary Action Button */}
+  {rsvpStatus[selectedEvent.id] === 'going' ? (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3 p-4 bg-green-50 border-2 border-green-200 rounded-xl">
+        <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <div className="flex-1">
+          <div className="font-bold text-green-900">You're Attending</div>
+          <div className="text-sm text-green-700">See you there!</div>
+        </div>
+      </div>
+      
+      <button
+        onClick={() => handleRSVP(selectedEvent.id, 'not_going')}
+        className="w-full py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
+      >
+        Can't make it anymore
+      </button>
+    </div>
+  ) : (
+    <button
+      onClick={() => {
+        if (user) {
+          handleRSVP(selectedEvent.id, 'going');
+          showSuccessToast(`You're attending ${selectedEvent.title}!`);
+        } else {
+          showInfoToast('Please login to RSVP');
+          setView('login');
+        }
+      }}
+      className={`w-full py-4 rounded-xl font-bold text-lg transition-all shadow-md hover:shadow-lg transform hover:scale-105 ${
+        selectedEvent.event_type === 'ticketed'
+          ? 'bg-purple-600 hover:bg-purple-700 text-white'
+          : selectedEvent.event_type === 'contribution_based'
+          ? 'bg-pink-600 hover:bg-pink-700 text-white'
+          : selectedEvent.event_type === 'online'
+          ? 'bg-blue-600 hover:bg-blue-700 text-white'
+          : 'bg-green-600 hover:bg-green-700 text-white'
+      }`}
+    >
+      {selectedEvent.event_type === 'ticketed' ? 'Get Tickets' :
+       selectedEvent.event_type === 'contribution_based' ? 'Support Event' :
+       selectedEvent.event_type === 'online' ? 'Register' :
+       selectedEvent.event_type === 'private_invite' ? 'Request Invite' :
+       'RSVP Now'}
+    </button>
+  )}
+
+  {eventRSVPs[selectedEvent.id]?.going?.length > 0 && (
+    <button
+      onClick={() => {
+        setView("attendees");
+        if (user && eventRSVPs[selectedEvent.id]) {
+          eventRSVPs[selectedEvent.id].going?.forEach(
+            (attendee) => {
+              if (attendee.user_id !== user.id) {
+                checkBuddyStatus(attendee.user_id);
+              }
+            },
+          );
+        }
+      }}
+      className="w-full text-center text-sm text-indigo-600 hover:text-indigo-700 font-semibold py-2 mt-3"
+    >
+      See all attendees →
+    </button>
+  )}
+</div>
 
             {/* ADD MUTUAL BUDDIES SECTION HERE */}
             {mutualBuddies[selectedEvent.id] &&
@@ -8843,23 +8859,39 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                             >
                               View Details
                             </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (user) {
-                                  handleRSVP(event.id, "going");
-                                  showSuccessToast(
-                                    `You're going to ${event.title}!`,
-                                  );
-                                } else {
-                                  showInfoToast("Please login to RSVP");
-                                  setView("login");
-                                }
-                              }}
-                              className="flex-1 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all"
-                            >
-                              Join Event
-                            </button>
+                           <button 
+  onClick={(e) => {
+    e.stopPropagation();
+    const cta = getEventCTA(event);
+    if (event.event_type === 'online' && event.online_link) {
+      window.open(event.online_link, '_blank');
+    } else if (event.event_type === 'ticketed') {
+      showInfoToast('Payment integration coming soon!');
+    } else {
+      if (user) {
+        handleRSVP(event.id, 'going');
+        showSuccessToast(`You're attending ${event.title}!`);
+      } else {
+        showInfoToast('Please login to RSVP');
+        setView('login');
+      }
+    }
+  }}
+  className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all ${
+    getEventCTA(event).disabled 
+      ? 'bg-gray-400 text-white cursor-not-allowed'
+      : event.event_type === 'ticketed'
+      ? 'bg-purple-600 hover:bg-purple-700 text-white'
+      : event.event_type === 'contribution_based'
+      ? 'bg-pink-600 hover:bg-pink-700 text-white'
+      : event.event_type === 'online'
+      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+      : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+  }`}
+  disabled={getEventCTA(event).disabled}
+>
+  {getEventCTA(event).text}
+</button>
                           </div>
                         </div>
                       </div>
