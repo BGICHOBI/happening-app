@@ -82,6 +82,36 @@ const isEventLive = (event) => {
   return now >= eventDate && now <= eventEnd;
 };
 
+// Get capacity info for an event
+const getCapacityInfo = (event) => {
+  if (!event.capacity) return null;
+  
+  const sold = event.tickets_sold || 0;
+  const available = event.capacity - sold;
+  const percentFull = (sold / event.capacity) * 100;
+  
+  return {
+    total: event.capacity,
+    sold: sold,
+    available: available,
+    percentFull: percentFull,
+    isFull: available <= 0,
+    almostFull: percentFull >= 90 && available > 0,
+    lowStock: available <= 10 && available > 0
+  };
+};
+
+// Get capacity display text
+const getCapacityText = (event) => {
+  const info = getCapacityInfo(event);
+  if (!info) return null;
+  
+  if (info.isFull) return 'Sold Out';
+  if (info.almostFull) return `Only ${info.available} spots left!`;
+  if (info.lowStock) return `${info.available} spots left`;
+  return `${info.available} of ${info.total} spots available`;
+};
+
 // Get time until event starts
 const getTimeUntilEvent = (event) => {
   const now = new Date();
@@ -7729,35 +7759,74 @@ const handleDeleteFeedComment = async (commentId, postId) => {
     </div>
   )}
 
+{/* Capacity Progress Bar (for ticketed/capacity events) - NEW */}
+{selectedEvent.capacity && getCapacityInfo(selectedEvent) && (
+  <div className="mb-4">
+    <div className="flex justify-between text-sm mb-2">
+      <span>
+        {getCapacityInfo(selectedEvent).sold} tickets sold
+      </span>
+      <span className={getCapacityInfo(selectedEvent).isFull ? 'font-bold' : ''}>
+        {getCapacityInfo(selectedEvent).isFull 
+          ? 'SOLD OUT' 
+          : `${getCapacityInfo(selectedEvent).available} spots left`}
+      </span>
+    </div>
+    <div className="w-full bg-white/30 rounded-full h-3">
+      <div 
+        className={`h-3 rounded-full transition-all duration-500 ${
+          getCapacityInfo(selectedEvent).isFull
+            ? 'bg-gray-400'
+            : getCapacityInfo(selectedEvent).almostFull
+            ? 'bg-orange-400'
+            : 'bg-white'
+        }`}
+        style={{ 
+          width: `${Math.min(getCapacityInfo(selectedEvent).percentFull, 100)}%` 
+        }}
+      />
+    </div>
+    {getCapacityInfo(selectedEvent).almostFull && !getCapacityInfo(selectedEvent).isFull && (
+      <div className="text-center text-sm mt-2 font-bold animate-pulse">
+        ⚠️ Almost Full - Book Now!
+      </div>
+    )}
+  </div>
+)}
+
   {/* Dynamic CTA Button */}
-  <button 
-    className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
-      getEventCTA(selectedEvent).disabled
-        ? 'bg-gray-400 cursor-not-allowed'
-        : isEventLive(selectedEvent) && (selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid')
-        ? 'bg-white text-red-600 hover:shadow-2xl transform hover:scale-105 animate-pulse'
-        : 'bg-white hover:shadow-lg transform hover:scale-105'
-    } ${
+<button 
+  className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
+    getEventCTA(selectedEvent).disabled
+      ? 'bg-gray-600 text-white cursor-not-allowed opacity-75'
+      : isEventLive(selectedEvent) && (selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid')
+      ? 'bg-white text-red-600 hover:shadow-2xl transform hover:scale-105 animate-pulse'
+      : 'bg-white hover:shadow-lg transform hover:scale-105'
+  } ${
+    !getEventCTA(selectedEvent).disabled && (
       selectedEvent.event_type === 'contribution_based' 
         ? 'text-pink-600'
         : selectedEvent.event_type === 'online'
         ? 'text-blue-600'
         : 'text-indigo-600'
-    }`}
-    disabled={getEventCTA(selectedEvent).disabled}
-    onClick={() => {
-      if ((selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid') && selectedEvent.online_link) {
-        window.open(selectedEvent.online_link, '_blank');
-        if (user) handleRSVP(selectedEvent.id, 'going');
-      } else {
-        showInfoToast('Payment integration coming soon!');
-      }
-    }}
-  >
-    {isEventLive(selectedEvent) && (selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid')
-      ? '🔴 Join Live Now'
-      : getEventCTA(selectedEvent).text}
-  </button>
+    )
+  }`}
+  disabled={getEventCTA(selectedEvent).disabled}
+  onClick={() => {
+    if (getEventCTA(selectedEvent).disabled) return;
+    
+    if ((selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid') && selectedEvent.online_link) {
+      window.open(selectedEvent.online_link, '_blank');
+      if (user) handleRSVP(selectedEvent.id, 'going');
+    } else {
+      showInfoToast('Payment integration coming soon!');
+    }
+  }}
+>
+  {isEventLive(selectedEvent) && (selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid') && !getEventCTA(selectedEvent).disabled
+    ? '🔴 Join Live Now'
+    : getEventCTA(selectedEvent).text}
+</button>
 
   {/* Online Event Link */}
   {(selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid') && selectedEvent.online_link && (
@@ -8781,7 +8850,42 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
       <span>LIVE NOW</span>
     </div>
   )}
-  
+
+ {/* Capacity Badge - NEW */}
+  {event.capacity && getCapacityInfo(event) && (
+    <div className={`text-white text-xs px-2.5 py-1 rounded-full font-bold shadow-lg flex items-center gap-1 ${
+      getCapacityInfo(event).isFull
+        ? 'bg-gray-700'
+        : getCapacityInfo(event).almostFull
+        ? 'bg-orange-600'
+        : getCapacityInfo(event).lowStock
+        ? 'bg-yellow-600'
+        : 'bg-blue-600'
+    }`}>
+      {getCapacityInfo(event).isFull ? (
+        <>
+          <span>🚫</span>
+          <span>Sold Out</span>
+        </>
+      ) : getCapacityInfo(event).almostFull ? (
+        <>
+          <span>⚠️</span>
+          <span>{getCapacityInfo(event).available} left</span>
+        </>
+      ) : getCapacityInfo(event).lowStock ? (
+        <>
+          <span>🔥</span>
+          <span>{getCapacityInfo(event).available} left</span>
+        </>
+      ) : (
+        <>
+          <span>🎟️</span>
+          <span>{getCapacityInfo(event).available} spots</span>
+        </>
+      )}
+    </div>
+  )}
+
   {event.verified && (
     <div className="bg-blue-500 text-white text-xs px-2.5 py-1 rounded-full font-bold shadow-lg flex items-center gap-1">
       <span>✓</span>
