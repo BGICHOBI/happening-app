@@ -6918,6 +6918,110 @@ const handleDeleteFeedComment = async (commentId, postId) => {
     }}
   />
 </label>
+
+{/* Video Upload - NEW */}
+<label className="p-2 hover:bg-white rounded-lg transition-all cursor-pointer" title="Add video">
+  <svg
+    className="w-5 h-5 text-blue-600"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+    />
+  </svg>
+  <input
+    type="file"
+    accept="video/*"
+    className="hidden"
+    onChange={async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        // Check file size (max 50MB)
+        if (file.size > 50 * 1024 * 1024) {
+          showInfoToast("Video file is too large. Maximum size is 50MB.");
+          return;
+        }
+
+        console.log('🎥 Selected video:', {
+          name: file.name,
+          type: file.type,
+          size: file.size
+        });
+
+        showInfoToast("Uploading video...");
+        setUploadingPost(true);
+
+        const formData = new FormData();
+        formData.append("video", file);
+
+        try {
+          const response = await fetch(`${API_URL}/api/upload/video`, {
+            method: "POST",
+            body: formData,
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            setNewFeedPost({
+              ...newFeedPost,
+              mediaUrl: data.url,
+              postType: "video",
+            });
+            showSuccessToast("Video uploaded!");
+          } else {
+            console.error('Video upload failed:', data);
+            showErrorToast(data.error || "Failed to upload video");
+          }
+        } catch (error) {
+          console.error("Video upload error:", error);
+          showErrorToast("Failed to upload video");
+        } finally {
+          setUploadingPost(false);
+        }
+      }
+    }}
+  />
+</label>
+
+Step 3: Update Media Preview in Post Composer
+Find the Media Preview section (around line 850):
+Replace it with this version that supports both images and videos:
+javascript{/* Media Preview */}
+{newFeedPost.mediaUrl && (
+  <div className="mt-3 relative rounded-lg overflow-hidden">
+    {newFeedPost.postType === "video" ? (
+      <video
+        src={newFeedPost.mediaUrl}
+        controls
+        className="w-full max-h-96 object-cover bg-black"
+      />
+    ) : (
+      <img
+        src={newFeedPost.mediaUrl}
+        alt="Preview"
+        className="w-full h-48 object-cover rounded-lg"
+      />
+    )}
+    <button
+      onClick={() =>
+        setNewFeedPost({
+          ...newFeedPost,
+          mediaUrl: "",
+          postType: "text",
+        })
+      }
+      className="absolute top-2 right-2 p-2 bg-black/60 hover:bg-black/80 rounded-full text-white transition-all"
+    >
+      <X className="w-5 h-5" />
+    </button>
+  </div>
+)}
                     {/* Event Tag - Already handled by selector */}
                     <button
                       onClick={() => {
@@ -11924,74 +12028,99 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
 
   if (view === "event-feed" && selectedEvent) {
     const handleCreatePost = async () => {
-      if (!authToken) {
-        showInfoToast("Please login to post");
-        return;
-      }
+  if (!authToken) {
+    showInfoToast("Please login to post");
+    return;
+  }
 
-      if (!newPost.content && !new(post.media_url || post.image)) {
-        showInfoToast("Please add content or upload a photo");
-        return;
-      }
+  if (!newPost.content && !newPost.media_url) {
+    showInfoToast("Please add content or upload a photo");
+    return;
+  }
 
+  try {
+    // Create event-specific post
+    const eventPostResponse = await fetch(`${API_URL}/api/posts`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({
+        eventId: selectedEvent.id,
+        type: newPost.type,
+        content: newPost.content,
+        media_url: newPost.media_url,
+      }),
+    });
+
+    if (eventPostResponse.ok) {
+      // ALSO create feed post so it appears in Discovery
+      const feedPostData = {
+        eventId: selectedEvent.id,
+        eventTitle: selectedEvent.title,
+        eventDate: selectedEvent.date,
+        eventLocation: selectedEvent.location,
+        postType: newPost.type,
+        content: newPost.content,
+        mediaUrl: newPost.media_url || "",
+        eventPhase: getEventPhase(selectedEvent),
+        isCheckedIn: true,
+      };
+
+      await fetch(`${API_URL}/api/feed-posts`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify(feedPostData),
+      });
+
+      setNewPost({ type: "comment", content: "", media_url: "" });
+      
+      // Refresh posts
       try {
-        const response = await fetch(`${API_URL}/api/posts`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({
-            eventId: selectedEvent.id,
-            type: newPost.type,
-            content: newPost.content,
-            media_url: new(post.media_url || post.image),
-          }),
-        });
+        const [feedPostsResponse, eventPostsResponse] = await Promise.all([
+          fetch(`${API_URL}/api/feed-posts`),
+          fetch(`${API_URL}/api/posts/event/${selectedEvent.id}`),
+        ]);
 
-        if (response.ok) {
-          setNewPost({ type: "comment", content: "", media_url: "" });
-          // Refresh posts after action
-          try {
-            const [feedPostsResponse, eventPostsResponse] = await Promise.all([
-              fetch(`${API_URL}/api/feed-posts`),
-              fetch(`${API_URL}/api/posts/event/${selectedEvent.id}`),
-            ]);
+        let allPosts = [];
 
-            let allPosts = [];
-
-            if (feedPostsResponse.ok) {
-              const feedData = await feedPostsResponse.json();
-              const eventFeedPosts = feedData.filter(
-                (post) => post.event_id === selectedEvent.id,
-              );
-              allPosts = [...eventFeedPosts];
-            }
-
-            if (eventPostsResponse.ok) {
-              const eventData = await eventPostsResponse.json();
-              allPosts = [...allPosts, ...eventData];
-            }
-
-            const uniquePosts = allPosts.filter(
-              (post, index, self) =>
-                index === self.findIndex((p) => p.id === post.id),
-            );
-
-            uniquePosts.sort(
-              (a, b) => new Date(b.created_at) - new Date(a.created_at),
-            );
-            setPosts(uniquePosts);
-          } catch (error) {
-            console.error("Error refreshing posts:", error);
-          }
-          showSuccessToast("Post shared!");
+        if (feedPostsResponse.ok) {
+          const feedData = await feedPostsResponse.json();
+          const eventFeedPosts = feedData.filter(
+            (post) => post.event_id === selectedEvent.id,
+          );
+          allPosts = [...eventFeedPosts];
         }
+
+        if (eventPostsResponse.ok) {
+          const eventData = await eventPostsResponse.json();
+          allPosts = [...allPosts, ...eventData];
+        }
+
+        const uniquePosts = allPosts.filter(
+          (post, index, self) =>
+            index === self.findIndex((p) => p.id === post.id),
+        );
+
+        uniquePosts.sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at),
+        );
+        setPosts(uniquePosts);
       } catch (error) {
-        console.error("Error creating post:", error);
-        showErrorToast("Failed to post");
+        console.error("Error refreshing posts:", error);
       }
-    };
+      
+      showSuccessToast("Post shared!");
+    }
+  } catch (error) {
+    console.error("Error creating post:", error);
+    showErrorToast("Failed to post");
+  }
+};
 
     const handleDeletePost = async (postId) => {
       if (!authToken) {
@@ -12186,17 +12315,17 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                 />
               </div>
 
-              {new(post.media_url || post.image) && (
+              {newPost.media_url && (
                 <div className="mb-3 relative rounded-lg overflow-hidden">
                   {newPost.type === "video" ? (
                     <video
-                      src={new(post.media_url || post.image)}
+                      src={newPost.media_url}
                       controls
                       className="w-full max-h-80 object-cover"
                     />
                   ) : (
                     <img
-                      src={new(post.media_url || post.image)}
+                      src={newPost.media_url}
                       alt="Upload"
                       className="w-full max-h-80 object-cover"
                     />
@@ -12271,7 +12400,7 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                   onClick={handleCreatePost}
                   disabled={
                     uploadingPost ||
-                    (!newPost.content.trim() && !new(post.media_url || post.image))
+                    (!newPost.content.trim() && !newPost.media_url)
                   }
                   className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full font-semibold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
