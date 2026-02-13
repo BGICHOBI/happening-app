@@ -6989,10 +6989,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
   />
 </label>
 
-Step 3: Update Media Preview in Post Composer
-Find the Media Preview section (around line 850):
-Replace it with this version that supports both images and videos:
-javascript{/* Media Preview */}
+{/* Media Preview */}
 {newFeedPost.mediaUrl && (
   <div className="mt-3 relative rounded-lg overflow-hidden">
     {newFeedPost.postType === "video" ? (
