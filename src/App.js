@@ -1871,13 +1871,13 @@ const handleCreateEvent = async () => {
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/rsvp`, {
+      const response = await fetch(`${API_URL}/api/rsvps`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify({ eventId, status }),
+        body: JSON.stringify({ event_id: eventId, status }),
       });
 
       if (response.ok) {
@@ -1890,23 +1890,36 @@ const handleCreateEvent = async () => {
     }
   };
 
-  const fetchEventRSVPs = async (eventId) => {
-    try {
-      const response = await fetch(`${API_URL}/api/rsvp/event/${eventId}/all`);
-      if (response.ok) {
-        const data = await response.json();
-        setEventRSVPs({ ...eventRSVPs, [eventId]: data });
-      }
-    } catch (error) {
-      console.error("Error fetching RSVPs:", error);
+ const fetchEventRSVPs = async (eventId) => {
+  try {
+    const response = await fetch(`${API_URL}/api/rsvps/event/${eventId}`, {
+      headers: authToken ? {
+        Authorization: `Bearer ${authToken}`
+      } : {}
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      
+      // Group by status
+      const grouped = {
+        going: data.filter(r => r.status === 'going'),
+        interested: data.filter(r => r.status === 'interested'),
+        not_going: data.filter(r => r.status === 'not_going')
+      };
+      
+      setEventRSVPs({ ...eventRSVPs, [eventId]: grouped });
     }
-  };
+  } catch (error) {
+    console.error("Error fetching RSVPs:", error);
+  }
+};
 
   const fetchUserRSVP = async (eventId) => {
     if (!authToken) return;
 
     try {
-      const response = await fetch(`${API_URL}/api/rsvp/event/${eventId}`, {
+      const response = await fetch(`${API_URL}/api/rsvps/event/${eventId}`, {
         headers: {
           Authorization: `Bearer ${authToken}`,
         },
@@ -7490,14 +7503,31 @@ const handleDeleteFeedComment = async (commentId, postId) => {
   </div>
 </div>
        {/* RSVP Section - Single Clean Card */}
+{/* Dynamic RSVP Section - Single Action */}
 <div className="bg-white rounded-2xl shadow-md p-5">
   <div className="flex items-center justify-between mb-4">
     <div>
       <h3 className="text-lg font-bold text-gray-900">
-        {rsvpStatus[selectedEvent.id] === 'going' ? "You're Going!" : "Interested?"}
+        {rsvpStatus[selectedEvent.id] === 'going' 
+          ? selectedEvent.event_type === 'ticketed' ? "Ticket Confirmed!" : "You're Going!" 
+          : selectedEvent.event_type === 'ticketed' ? "Get Your Ticket"
+          : selectedEvent.event_type === 'contribution_based' ? "Support This Cause"
+          : selectedEvent.event_type === 'online' ? "Join This Event"
+          : selectedEvent.event_type === 'private_invite' ? "Invitation"
+          : "Join This Event"
+        }
       </h3>
       <p className="text-sm text-gray-500">
-        {eventRSVPs[selectedEvent.id]?.going?.length || 0} attending
+        {/* Dynamic count based on event type */}
+        {selectedEvent.event_type === 'ticketed' && selectedEvent.tickets_sold ? (
+          `${selectedEvent.tickets_sold} ${selectedEvent.tickets_sold === 1 ? 'ticket' : 'tickets'} sold`
+        ) : selectedEvent.event_type === 'contribution_based' && selectedEvent.contribution_raised ? (
+          `KES ${selectedEvent.contribution_raised?.toLocaleString()} raised • ${eventRSVPs[selectedEvent.id]?.going?.length || 0} supporters`
+        ) : selectedEvent.event_type === 'online' ? (
+          `${eventRSVPs[selectedEvent.id]?.going?.length || 0} registered`
+        ) : (
+          `${eventRSVPs[selectedEvent.id]?.going?.length || 0} ${(eventRSVPs[selectedEvent.id]?.going?.length || 0) === 1 ? "person" : "people"} attending`
+        )}
       </p>
     </div>
 
@@ -7523,7 +7553,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
     )}
   </div>
 
-  {/* Action Button */}
+  {/* Single Action Button - Type Specific */}
   {rsvpStatus[selectedEvent.id] === 'going' ? (
     <div className="space-y-2">
       <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl">
@@ -7533,7 +7563,11 @@ const handleDeleteFeedComment = async (commentId, postId) => {
           </svg>
         </div>
         <div className="flex-1">
-          <div className="font-semibold text-green-900 text-sm">Attending</div>
+          <div className="font-semibold text-green-900 text-sm">
+            {selectedEvent.event_type === 'ticketed' ? 'Ticket Confirmed' : 
+             selectedEvent.event_type === 'contribution_based' ? 'Supporting' :
+             'Attending'}
+          </div>
         </div>
       </div>
       
@@ -7541,35 +7575,57 @@ const handleDeleteFeedComment = async (commentId, postId) => {
         onClick={() => handleRSVP(selectedEvent.id, 'not_going')}
         className="w-full py-2.5 border border-gray-300 text-gray-700 text-sm rounded-xl font-medium hover:bg-gray-50 transition-all"
       >
-        Cancel RSVP
+        Cancel {selectedEvent.event_type === 'ticketed' ? 'Ticket' : 
+                selectedEvent.event_type === 'contribution_based' ? 'Support' : 
+                'RSVP'}
       </button>
     </div>
   ) : (
     <button
       onClick={() => {
         if (user) {
-          handleRSVP(selectedEvent.id, 'going');
-          showSuccessToast(`You're attending ${selectedEvent.title}!`);
+          if (selectedEvent.event_type === 'ticketed' || selectedEvent.event_type === 'contribution_based') {
+            showInfoToast('Payment integration coming soon!');
+          } else if ((selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid') && selectedEvent.online_link && isEventLive(selectedEvent)) {
+            window.open(selectedEvent.online_link, '_blank');
+            handleRSVP(selectedEvent.id, 'going');
+          } else {
+            handleRSVP(selectedEvent.id, 'going');
+            showSuccessToast(`You're attending ${selectedEvent.title}!`);
+          }
         } else {
           showInfoToast('Please login to RSVP');
           setView('login');
         }
       }}
+      disabled={selectedEvent.capacity && selectedEvent.tickets_sold >= selectedEvent.capacity}
       className={`w-full py-3.5 rounded-xl font-bold transition-all shadow-sm hover:shadow-md transform hover:scale-[1.02] ${
-        selectedEvent.event_type === 'ticketed'
+        selectedEvent.capacity && selectedEvent.tickets_sold >= selectedEvent.capacity
+          ? 'bg-gray-400 text-white cursor-not-allowed'
+          : selectedEvent.event_type === 'ticketed'
           ? 'bg-purple-600 hover:bg-purple-700 text-white'
           : selectedEvent.event_type === 'contribution_based'
           ? 'bg-pink-600 hover:bg-pink-700 text-white'
           : selectedEvent.event_type === 'online'
           ? 'bg-blue-600 hover:bg-blue-700 text-white'
+          : selectedEvent.event_type === 'private_invite'
+          ? 'bg-gray-700 hover:bg-gray-800 text-white'
           : 'bg-green-600 hover:bg-green-700 text-white'
       }`}
     >
-      {selectedEvent.event_type === 'ticketed' ? 'Get Tickets' :
-       selectedEvent.event_type === 'contribution_based' ? 'Support Event' :
-       selectedEvent.event_type === 'online' ? 'Register' :
-       selectedEvent.event_type === 'private_invite' ? 'Request Invite' :
-       'RSVP Now'}
+      {selectedEvent.capacity && selectedEvent.tickets_sold >= selectedEvent.capacity
+        ? '🚫 Sold Out'
+        : isEventLive(selectedEvent) && (selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid')
+        ? '🔴 Join Live Now'
+        : selectedEvent.event_type === 'ticketed'
+        ? 'Buy Ticket'
+        : selectedEvent.event_type === 'contribution_based'
+        ? 'Contribute Now'
+        : selectedEvent.event_type === 'online'
+        ? 'Register'
+        : selectedEvent.event_type === 'private_invite'
+        ? 'Accept Invite'
+        : 'RSVP Now'}
     </button>
   )}
 
@@ -7588,7 +7644,9 @@ const handleDeleteFeedComment = async (commentId, postId) => {
       }}
       className="w-full text-center text-sm text-indigo-600 hover:text-indigo-700 font-semibold py-2 mt-2"
     >
-      See all attendees →
+      See all {selectedEvent.event_type === 'ticketed' ? 'ticket holders' :
+               selectedEvent.event_type === 'contribution_based' ? 'supporters' :
+               'attendees'} →
     </button>
   )}
 </div>
@@ -7728,83 +7786,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
           </div>
         </div>
 
-    {/* Sticky Bottom CTA Bar */}
-        <div className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-40 px-4 py-3">
-          <div className="max-w-4xl mx-auto flex items-center gap-3">
-            {/* Event Price/Type Info */}
-            <div className="flex-1 min-w-0">
-              <div className="text-xs text-gray-500 font-medium">
-                {selectedEvent.event_type === 'contribution_based' 
-                  ? 'Support this cause' 
-                  : selectedEvent.event_type === 'online' 
-                  ? 'Join virtually' 
-                  : selectedEvent.event_type === 'ticketed' 
-                  ? 'Get your spot' 
-                  : 'Attend this event'}
-              </div>
-              <div className="text-lg font-bold text-gray-900 truncate">
-                {selectedEvent.price}
-              </div>
-            </div>
 
-            {/* CTA Button */}
-            {rsvpStatus[selectedEvent.id] === 'going' ? (
-              <div className="flex items-center gap-2 bg-green-50 border border-green-200 px-4 py-2.5 rounded-xl">
-                <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <span className="font-bold text-green-900 text-sm whitespace-nowrap">You're Going</span>
-              </div>
-            ) : (
-              <button
-                onClick={() => {
-                  if (user) {
-                    if ((selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid') && selectedEvent.online_link && isEventLive(selectedEvent)) {
-                      window.open(selectedEvent.online_link, '_blank');
-                      handleRSVP(selectedEvent.id, 'going');
-                    } else if (selectedEvent.event_type === 'ticketed' || selectedEvent.event_type === 'contribution_based') {
-                      showInfoToast('Payment integration coming soon!');
-                    } else {
-                      handleRSVP(selectedEvent.id, 'going');
-                      showSuccessToast(`You're attending ${selectedEvent.title}!`);
-                    }
-                  } else {
-                    showInfoToast('Please login to RSVP');
-                    setView('login');
-                  }
-                }}
-                disabled={selectedEvent.capacity && selectedEvent.tickets_sold >= selectedEvent.capacity}
-                className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md hover:shadow-lg whitespace-nowrap ${
-                  selectedEvent.capacity && selectedEvent.tickets_sold >= selectedEvent.capacity
-                    ? 'bg-gray-400 text-white cursor-not-allowed'
-                    : isEventLive(selectedEvent) && (selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid')
-                    ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse'
-                    : selectedEvent.event_type === 'ticketed'
-                    ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                    : selectedEvent.event_type === 'contribution_based'
-                    ? 'bg-pink-600 hover:bg-pink-700 text-white'
-                    : selectedEvent.event_type === 'online'
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                    : 'bg-green-600 hover:bg-green-700 text-white'
-                }`}
-              >
-                {selectedEvent.capacity && selectedEvent.tickets_sold >= selectedEvent.capacity
-                  ? '🚫 Sold Out'
-                  : isEventLive(selectedEvent) && (selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid')
-                  ? '🔴 Join Live'
-                  : selectedEvent.event_type === 'ticketed'
-                  ? 'Get Tickets'
-                  : selectedEvent.event_type === 'contribution_based'
-                  ? 'Support'
-                  : selectedEvent.event_type === 'online'
-                  ? 'Register'
-                  : 'RSVP Now'}
-              </button>
-            )}
-          </div>
-        </div>
 
         {/* Bottom Navigation */}
         <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
