@@ -1863,32 +1863,38 @@ const handleCreateEvent = async () => {
     }
   };
 
-  const handleRSVP = async (eventId, status) => {
-    if (!authToken) {
-      showInfoToast("Please login to RSVP");
-      setView("login");
-      return;
-    }
+const handleRSVP = async (eventId, status) => {
+  if (!authToken) {
+    showInfoToast("Please login to RSVP");
+    setView("login");
+    return;
+  }
 
-    try {
-      const response = await fetch(`${API_URL}/api/rsvps`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({ event_id: eventId, status }),
-      });
+  try {
+    const response = await fetch(`${API_URL}/api/rsvps`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({ event_id: eventId, status }),
+    });
 
-      if (response.ok) {
-        setRsvpStatus({ ...rsvpStatus, [eventId]: status });
-        // Refresh event RSVPs
-        fetchEventRSVPs(eventId);
-      }
-    } catch (error) {
-      console.error("Error saving RSVP:", error);
+    if (response.ok) {
+      setRsvpStatus({ ...rsvpStatus, [eventId]: status });
+      
+      // Refresh event RSVPs to update count
+      fetchEventRSVPs(eventId);
+      
+      // Refresh the events list to update counts on explore cards
+      fetchEvents();  // ← ADD THIS LINE
+      
+      showSuccessToast('RSVP updated!');
     }
-  };
+  } catch (error) {
+    console.error("Error saving RSVP:", error);
+  }
+};
 
  const fetchEventRSVPs = async (eventId) => {
   try {
@@ -8971,9 +8977,15 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                             >
                               View Details
                             </button>
-                        <button
+                       <button
   onClick={(e) => {
     e.stopPropagation();
+    
+    // Check if already RSVP'd - ADD THIS FIRST
+    if (rsvpStatus[event.id] === 'going') {
+      showInfoToast("You're already attending this event!");
+      return;
+    }
     
     // Handle different event types
     if (event.event_type === 'online' && event.online_link) {
