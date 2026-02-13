@@ -1965,7 +1965,7 @@ const handleCreateEvent = async () => {
       if (showLoading) {
         setLoadingPosts(true);
       }
-      const response = await fetch(`${API_URL}/api/posts/event/${eventId}`);
+      const response = await fetch(`${API_URL}/api/feed-posts/event/${eventId}`);
       if (response.ok) {
         const data = await response.json();
         setPosts(data);
@@ -2094,8 +2094,11 @@ const startPolling = (eventId) => {
     // Fetch from both sources during polling
     try {
       const [feedPostsResponse, eventPostsResponse] = await Promise.all([
-        fetch(`${API_URL}/api/feed-posts`),
-        fetch(`${API_URL}/api/posts/event/${eventId}`),
+       fetch(`${API_URL}/api/feed-posts`, {
+  headers: authToken ? {
+    Authorization: `Bearer ${authToken}`
+  } : {}
+})
       ]);
 
       let allPosts = [];
@@ -7653,9 +7656,13 @@ const handleDeleteFeedComment = async (commentId, postId) => {
       setPosts([]);
       try {
         const [feedPostsResponse, eventPostsResponse] = await Promise.all([
-          fetch(`${API_URL}/api/feed-posts`),
-          fetch(`${API_URL}/api/posts/event/${selectedEvent.id}`),
-        ]);
+  fetch(`${API_URL}/api/feed-posts`, {
+    headers: authToken ? {
+      Authorization: `Bearer ${authToken}`
+    } : {}
+  }),
+  fetch(`${API_URL}/api/feed-posts/event/${selectedEvent.id}`),
+]);
         let allPosts = [];
         if (feedPostsResponse.ok) {
           const feedData = await feedPostsResponse.json();
@@ -12037,18 +12044,23 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
 
   try {
     // Create event-specific post
-    const eventPostResponse = await fetch(`${API_URL}/api/posts`, {
+    const eventPostResponse = await fetch(`${API_URL}/api/feed-posts`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${authToken}`,
       },
-      body: JSON.stringify({
-        eventId: selectedEvent.id,
-        type: newPost.type,
-        content: newPost.content,
-        media_url: newPost.media_url,
-      }),
+    body: JSON.stringify({
+  eventId: selectedEvent.id,
+  eventTitle: selectedEvent.title,
+  eventDate: selectedEvent.date,
+  eventLocation: selectedEvent.location,
+  content: newPost.content,
+  mediaUrl: newPost.media_url,
+  postType: newPost.type,
+  eventPhase: getEventPhase(selectedEvent),
+  isCheckedIn: true
+}),
     });
 
     if (eventPostResponse.ok) {
@@ -12078,10 +12090,14 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
       
       // Refresh posts
       try {
-        const [feedPostsResponse, eventPostsResponse] = await Promise.all([
-          fetch(`${API_URL}/api/feed-posts`),
-          fetch(`${API_URL}/api/posts/event/${selectedEvent.id}`),
-        ]);
+       const [feedPostsResponse, eventPostsResponse] = await Promise.all([
+  fetch(`${API_URL}/api/feed-posts`, {
+    headers: authToken ? {
+      Authorization: `Bearer ${authToken}`
+    } : {}
+  }),
+  fetch(`${API_URL}/api/feed-posts/event/${selectedEvent.id}`),
+]);
 
         let allPosts = [];
 
@@ -12141,8 +12157,11 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
           // Refresh posts after action
           try {
             const [feedPostsResponse, eventPostsResponse] = await Promise.all([
-              fetch(`${API_URL}/api/feed-posts`),
-              fetch(`${API_URL}/api/posts/event/${selectedEvent.id}`),
+             fetch(`${API_URL}/api/feed-posts`, {
+  headers: authToken ? {
+    Authorization: `Bearer ${authToken}`
+  } : {}
+})
             ]);
 
             let allPosts = [];
