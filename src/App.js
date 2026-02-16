@@ -2794,6 +2794,11 @@ const handleDeleteFeedComment = async (commentId, postId) => {
     try {
       const response = await fetch(
         `${API_URL}/api/follows/count/${followedType}/${followedId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        },
       );
       if (response.ok) {
         const data = await response.json();
@@ -2841,7 +2846,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify({ receiverId, receiverName }),
+        body: JSON.stringify({ receiver_id: receiverId }),
       });
 
       if (response.ok) {
@@ -2861,9 +2866,9 @@ const handleDeleteFeedComment = async (commentId, postId) => {
 
     try {
       const response = await fetch(
-        `${API_URL}/api/buddy-requests/accept/${requestId}`,
+        `${API_URL}/api/buddy-requests/${requestId}/accept`,
         {
-          method: "POST",
+          method: "PATCH",
           headers: {
             Authorization: `Bearer ${authToken}`,
           },
@@ -2884,9 +2889,9 @@ const handleDeleteFeedComment = async (commentId, postId) => {
 
     try {
       const response = await fetch(
-        `${API_URL}/api/buddy-requests/decline/${requestId}`,
+        `${API_URL}/api/buddy-requests/${requestId}/reject`,
         {
-          method: "POST",
+          method: "PATCH",
           headers: {
             Authorization: `Bearer ${authToken}`,
           },
