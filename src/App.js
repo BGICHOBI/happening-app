@@ -662,9 +662,18 @@ const [newEvent, setNewEvent] = useState({
                             </span>
                           </div>
                           <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Users className="w-4 h-4" />
-                            <span>{event.attending || 0} attending</span>
-                          </div>
+  <Users className="w-4 h-4" />
+  <span>
+    {event.attending || 0}{" "}
+    {event.event_type === 'ticketed' 
+      ? (event.attending === 1 ? 'ticket sold' : 'tickets sold')
+      : event.event_type === 'contribution_based'
+      ? (event.attending === 1 ? 'supporter' : 'supporters')
+      : event.event_type === 'online' || event.event_type === 'hybrid'
+      ? 'registered'
+      : 'attending'}
+  </span>
+</div>
                         </div>
                       </div>
                     </div>
@@ -4746,15 +4755,22 @@ const handleDeleteFeedComment = async (commentId, postId) => {
 
                 {/* Quick Action */}
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRSVP(event.id, "going");
-                    showSuccessToast("Added to your events!");
-                  }}
-                  className="self-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-all"
-                >
-                  Join
-                </button>
+  onClick={(e) => {
+    e.stopPropagation();
+    
+    // Check if already RSVP'd
+    if (rsvpStatus[event.id] === 'going') {
+      showInfoToast("You're already attending this event!");
+      return;
+    }
+    
+    handleRSVP(event.id, "going");
+    showSuccessToast("Added to your events!");
+  }}
+  className="self-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-all"
+>
+  {rsvpStatus[event.id] === 'going' ? '✓ Attending' : 'Join'}
+</button>
               </div>
 
               {/* Mutual Buddies Badge */}
@@ -9971,21 +9987,37 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                                 </span>
                               </div>
                               <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <Users className="w-4 h-4" />
-                                <span>{event.attending || 0} attending</span>
-                              </div>
+  <Users className="w-4 h-4" />
+  <span>
+    {event.attending || 0}{" "}
+    {event.event_type === 'ticketed' 
+      ? (event.attending === 1 ? 'ticket sold' : 'tickets sold')
+      : event.event_type === 'contribution_based'
+      ? (event.attending === 1 ? 'supporter' : 'supporters')
+      : event.event_type === 'online' || event.event_type === 'hybrid'
+      ? 'registered'
+      : 'attending'}
+  </span>
+</div>
                             </div>
 
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRSVP(event.id, "going");
-                                showSuccessToast("Added to your events!");
-                              }}
-                              className="self-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-all"
-                            >
-                              Join
-                            </button>
+  onClick={(e) => {
+    e.stopPropagation();
+    
+    // Check if already RSVP'd
+    if (rsvpStatus[event.id] === 'going') {
+      showInfoToast("You're already attending this event!");
+      return;
+    }
+    
+    handleRSVP(event.id, "going");
+    showSuccessToast("Added to your events!");
+  }}
+  className="self-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-all"
+>
+  {rsvpStatus[event.id] === 'going' ? '✓ Attending' : 'Join'}
+</button>
                           </div>
                         </div>
                       ))}
@@ -10042,21 +10074,37 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                                 </span>
                               </div>
                               <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <Users className="w-4 h-4" />
-                                <span>{event.attending || 0} attending</span>
-                              </div>
+  <Users className="w-4 h-4" />
+  <span>
+    {event.attending || 0}{" "}
+    {event.event_type === 'ticketed' 
+      ? (event.attending === 1 ? 'ticket sold' : 'tickets sold')
+      : event.event_type === 'contribution_based'
+      ? (event.attending === 1 ? 'supporter' : 'supporters')
+      : event.event_type === 'online' || event.event_type === 'hybrid'
+      ? 'registered'
+      : 'attending'}
+  </span>
+</div>
                             </div>
 
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRSVP(event.id, "going");
-                                showSuccessToast("Added to your events!");
-                              }}
-                              className="self-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-all"
-                            >
-                              Join
-                            </button>
+  onClick={(e) => {
+    e.stopPropagation();
+    
+    // Check if already RSVP'd
+    if (rsvpStatus[event.id] === 'going') {
+      showInfoToast("You're already attending this event!");
+      return;
+    }
+    
+    handleRSVP(event.id, "going");
+    showSuccessToast("Added to your events!");
+  }}
+  className="self-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-all"
+>
+  {rsvpStatus[event.id] === 'going' ? '✓ Attending' : 'Join'}
+</button>
                           </div>
                         </div>
                       ))}
@@ -10113,9 +10161,18 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                                 </span>
                               </div>
                               <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <Users className="w-4 h-4" />
-                                <span>{event.attending || 0} attending</span>
-                              </div>
+  <Users className="w-4 h-4" />
+  <span>
+    {event.attending || 0}{" "}
+    {event.event_type === 'ticketed' 
+      ? (event.attending === 1 ? 'ticket sold' : 'tickets sold')
+      : event.event_type === 'contribution_based'
+      ? (event.attending === 1 ? 'supporter' : 'supporters')
+      : event.event_type === 'online' || event.event_type === 'hybrid'
+      ? 'registered'
+      : 'attending'}
+  </span>
+</div>
                             </div>
 
                             <button
@@ -10277,9 +10334,18 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                         <span className="line-clamp-1">{event.location}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Users className="w-4 h-4" />
-                        <span>{event.attending || 0} attending</span>
-                      </div>
+  <Users className="w-4 h-4" />
+  <span>
+    {event.attending || 0}{" "}
+    {event.event_type === 'ticketed' 
+      ? (event.attending === 1 ? 'ticket sold' : 'tickets sold')
+      : event.event_type === 'contribution_based'
+      ? (event.attending === 1 ? 'supporter' : 'supporters')
+      : event.event_type === 'online' || event.event_type === 'hybrid'
+      ? 'registered'
+      : 'attending'}
+  </span>
+</div>
                     </div>
                   </div>
                 ))}
@@ -10330,9 +10396,18 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                         <span className="line-clamp-1">{event.location}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Users className="w-4 h-4" />
-                        <span>{event.attending || 0} attending</span>
-                      </div>
+  <Users className="w-4 h-4" />
+  <span>
+    {event.attending || 0}{" "}
+    {event.event_type === 'ticketed' 
+      ? (event.attending === 1 ? 'ticket sold' : 'tickets sold')
+      : event.event_type === 'contribution_based'
+      ? (event.attending === 1 ? 'supporter' : 'supporters')
+      : event.event_type === 'online' || event.event_type === 'hybrid'
+      ? 'registered'
+      : 'attending'}
+  </span>
+</div>
                     </div>
                   </div>
                 ))}
