@@ -4212,7 +4212,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                 key={idx}
                 className="w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-xs border-2 border-white"
               >
-                {getInitial(buddy.user_name)}
+                {getInitial(buddy.buddy_name)}
               </div>
             ))}
           </div>
@@ -4250,7 +4250,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
             >
               <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
 
-                {getInitial(buddy.user_name)}
+                {getInitial(buddy.buddy_name)}
               </div>
               <span className="text-sm font-semibold text-gray-900">
                 {buddy.user_name?.split(" ")[0]}
@@ -4792,7 +4792,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                               className="w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-xs border-2 border-white"
                             >
 
-                              {getInitial(buddy.user_name)}
+                              {getInitial(buddy.buddy_name)}
                             </div>
                           ))}
                       </div>
@@ -10675,7 +10675,7 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                             />
                           ) : (
                             <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                              {getInitial(buddy.user_name)}
+                              {getInitial(buddy.buddy_name)}
                             </div>
                           )}
                           {/* Online indicator */}
