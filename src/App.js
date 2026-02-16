@@ -2835,7 +2835,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/buddy-requests/send`, {
+      const response = await fetch(`${API_URL}/api/buddy-requests`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
