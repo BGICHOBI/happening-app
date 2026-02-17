@@ -2360,27 +2360,33 @@ const handleDeleteFeedComment = async (commentId, postId) => {
   }, [events, buddies, eventRSVPs]);
 
   // Event Chat functions
-  const fetchEventMessages = async (eventId, showLoading = true) => {
-    try {
-      if (showLoading) {
-        setLoadingMessages(true);
-      }
-      const response = await fetch(
-        `${API_URL}/api/event-messages/event/${eventId}`,
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setEventMessages(data);
-      }
-    } catch (error) {
-      console.error("Error fetching messages:", error);
-    } finally {
-      if (showLoading) {
-        setLoadingMessages(false);
-      }
+ const fetchEventMessages = async (eventId, showLoading = true) => {
+  if (!authToken) return;
+  
+  try {
+    if (showLoading) {
+      setLoadingMessages(true);
     }
-  };
-
+    const response = await fetch(
+      `${API_URL}/api/event-messages/event/${eventId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
+    if (response.ok) {
+      const data = await response.json();
+      setEventMessages(data);
+    }
+  } catch (error) {
+    console.error("Error fetching messages:", error);
+  } finally {
+    if (showLoading) {
+      setLoadingMessages(false);
+    }
+  }
+};
   // Generate recommendations when relevant data changes
   useEffect(() => {
     if (user && events.length > 0) {
@@ -2429,7 +2435,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify({ eventId, message: newMessage }),
+        body: JSON.stringify({ event_id: eventId, message: newMessage }),
       });
 
       if (response.ok) {
