@@ -2616,12 +2616,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
   // Handle typing indicator
   let typingTimeout;
   const handleTyping = (otherUserId) => {
-    // Show local typing indicator
-    setTypingUsers((prev) => ({
-      ...prev,
-      [otherUserId]: Date.now(),
-    }));
-
+   
     // Clear typing indicator after 3 seconds
     clearTimeout(typingTimeout);
     typingTimeout = setTimeout(() => {
@@ -5609,11 +5604,11 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                           title="Messages"
                         >
                           <MessageCircle className="w-6 h-6 text-gray-700" />
-                          {conversations.length > 0 && (
-                            <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                              {conversations.length}
-                            </span>
-                          )}
+                          {Object.values(unreadCounts).reduce((sum, count) => sum + count, 0) > 0 && (
+  <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+    {Object.values(unreadCounts).reduce((sum, count) => sum + count, 0)}
+  </span>
+)}
                         </button>
 
                         {/* ADD BUDDY ACTIVITY BUTTON HERE
@@ -11540,7 +11535,7 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
     const isOnline = onlineUsers.has(selectedConversation.userId);
 
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="h-screen bg-gray-50 flex flex-col" style={{height: '100dvh'}}>
         {/* Enhanced Header */}
         <header className="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-200">
           <div className="max-w-4xl mx-auto px-4 py-3">
@@ -11621,7 +11616,7 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
         </header>
 
         {/* Messages Container */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
+        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-1 pb-2">
           {loadingDms ? (
             <div className="text-center py-12">
               <LoadingSpinner size="lg" color="purple" />
@@ -11745,7 +11740,7 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
         </div>
 
         {/* Enhanced Message Input - Sticky */}
-        <div className="bg-white border-t border-gray-200 p-4 sticky bottom-0">
+        <div className="bg-white border-t border-gray-200 p-4 sticky bottom-0 pb-safe" style={{paddingBottom: 'max(1rem, env(safe-area-inset-bottom))'}}>
           <div className="max-w-4xl mx-auto flex items-end gap-2">
             {/* Media button */}
             <button
@@ -11774,7 +11769,7 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                 value={newDmMessage}
                 onChange={(e) => {
                   setNewDmMessage(e.target.value);
-                  handleTyping(selectedConversation.userId);
+              
                 }}
                 onKeyPress={(e) => {
                   if (e.key === "Enter" && !e.shiftKey && newDmMessage.trim()) {
