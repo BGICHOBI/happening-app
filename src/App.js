@@ -2593,8 +2593,8 @@ const handleDeleteFeedComment = async (commentId, postId) => {
     if (!authToken) return;
 
     try {
-      await fetch(`${API_URL}/api/direct-messages/mark-read/${otherUserId}`, {
-        method: "POST",
+      await fetch(`${API_URL}/api/direct-messages/read/${otherUserId}`, {
+        method: "PATCH",
         headers: {
           Authorization: `Bearer ${authToken}`,
         },
@@ -2651,10 +2651,9 @@ const handleDeleteFeedComment = async (commentId, postId) => {
           Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify({
-          receiverId,
-          receiverName,
-          message: newDmMessage,
-        }),
+  receiver_id: receiverId,
+  message: newDmMessage,
+}),
       });
 
       if (response.ok) {
