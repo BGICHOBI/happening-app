@@ -297,6 +297,8 @@ function App() {
   const [showRecommendations, setShowRecommendations] = useState(true);
   const [recommendationReason, setRecommendationReason] = useState({}); // { eventId: reason }
 
+
+  
   // MOBILE OPTIMIZATION STATES:
   const [isPulling, setIsPulling] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
@@ -1357,6 +1359,8 @@ const [newEvent, setNewEvent] = useState({
       fetchCurrentUser();
       fetchConversations(); // Load conversations for badge
       fetchPendingRequests(); // Load pending requests for badge
+      fetchNotifications();
+fetchUnreadNotifCount();
     }
   }, [authToken]);
 
@@ -2534,7 +2538,66 @@ const handleDeleteFeedComment = async (commentId, postId) => {
     setSuggestedBuddies(sorted);
   };
 
-  // Direct Messages functions
+const fetchNotifications = async () => {
+  if (!authToken) return;
+  try {
+    const response = await fetch(`${API_URL}/api/notifications`, {
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      setNotifications(data);
+    }
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+  }
+};
+
+const fetchUnreadNotifCount = async () => {
+  if (!authToken) return;
+  try {
+    const response = await fetch(`${API_URL}/api/notifications/unread-count`, {
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      setUnreadNotifications(data.unread_count);
+    }
+  } catch (error) {
+    console.error('Error fetching unread count:', error);
+  }
+};
+
+const markNotificationRead = async (notifId) => {
+  try {
+    await fetch(`${API_URL}/api/notifications/${notifId}/read`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    // Update local state
+    setNotifications(prev =>
+      prev.map(n => n.id === notifId ? { ...n, is_read: true } : n)
+    );
+    setUnreadNotifications(prev => Math.max(0, prev - 1));
+  } catch (error) {
+    console.error('Error marking notification read:', error);
+  }
+};
+
+const markAllNotificationsRead = async () => {
+  try {
+    await fetch(`${API_URL}/api/notifications/read-all`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    setUnreadNotifications(0);
+  } catch (error) {
+    console.error('Error marking all read:', error);
+  }
+};  
+
+// Direct Messages functions
   const fetchConversations = async () => {
     if (!authToken) return;
 
@@ -2667,6 +2730,8 @@ const handleDeleteFeedComment = async (commentId, postId) => {
       console.error("Error sending DM:", error);
     }
   };
+
+  
 
   const handleDeleteDm = async (messageId, otherUserId) => {
     if (!authToken) {
@@ -2850,10 +2915,25 @@ const handleDeleteFeedComment = async (commentId, postId) => {
         body: JSON.stringify({ receiver_id: receiverId }),
       });
 
-      if (response.ok) {
-        showSuccessToast("Buddy request sent!");
-        checkBuddyStatus(receiverId);
-      } else {
+     if (response.ok) {
+  showSuccessToast("Buddy request sent!");
+  checkBuddyStatus(receiverId);
+  // Create notification for receiver
+  await fetch(`${API_URL}/api/notifications`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`
+    },
+    body: JSON.stringify({
+      user_id: receiverId,
+      type: 'buddy_request',
+      message: `${user.name} sent you a buddy request`
+    })
+  });
+}
+        
+   else {
         const data = await response.json();
         showInfoToast(data.error || "Failed to send request");
       }
@@ -2862,28 +2942,41 @@ const handleDeleteFeedComment = async (commentId, postId) => {
     }
   };
 
-  const acceptBuddyRequest = async (requestId) => {
-    if (!authToken) return;
+  const acceptBuddyRequest = async (requestId, senderId) => {
+  if (!authToken) return;
 
-    try {
-      const response = await fetch(
-        `${API_URL}/api/buddy-requests/${requestId}/accept`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
+  try {
+    const response = await fetch(
+      `${API_URL}/api/buddy-requests/${requestId}/accept`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
         },
-      );
-
-      if (response.ok) {
-        fetchPendingRequests();
-        fetchBuddies();
       }
-    } catch (error) {
-      console.error("Error accepting request:", error);
+    );
+
+    if (response.ok) {
+      fetchPendingRequests();
+      fetchBuddies();
+      // Notify sender their request was accepted
+      await fetch(`${API_URL}/api/notifications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+          user_id: senderId,
+          type: 'buddy_accepted',
+          message: `${user.name} accepted your buddy request`
+        })
+      });
     }
-  };
+  } catch (error) {
+    console.error("Error accepting request:", error);
+  }
+};
 
   const declineBuddyRequest = async (requestId) => {
     if (!authToken) return;
@@ -5657,33 +5750,30 @@ const eventDateTime = new Date(`${dateStr}T${event.time}`);
                         </button>
                       )} */}
 
-                        <button
-                          onClick={() => {
-                            showInfoToast("Notifications feature coming soon!");
-                          }}
-                          className="relative p-2 hover:bg-gray-100 rounded-lg transition-all"
-                          title="Notifications"
-                        >
-                          <svg
-                            className="w-6 h-6 text-gray-700"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                            />
-                          </svg>
-                          {unreadNotifications > 0 && (
-                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                              {unreadNotifications}
-                            </span>
-                          )}
-                        </button>
-
+                       <button
+  onClick={() => setView("notifications")}
+  className="relative p-2 hover:bg-gray-100 rounded-lg transition-all"
+  title="Notifications"
+>
+  <svg
+    className="w-6 h-6 text-gray-700"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+    />
+  </svg>
+  {unreadNotifications > 0 && (
+    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+      {unreadNotifications}
+    </span>
+  )}
+</button>
                         <button
                           onClick={() => {
                             setView("buddies");
@@ -10975,7 +11065,7 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                       </div>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => acceptBuddyRequest(request.id)}
+                          onClick={() => acceptBuddyRequest(request.id, request.sender_id)}
                           className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all font-semibold"
                         >
                           Accept
@@ -11876,96 +11966,126 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
   }
 
   if (view === "notifications") {
-    return (
-      <div className="min-h-screen bg-gray-50 pb-24">
-        <ToastNotification />
+  return (
+    <div className="min-h-screen bg-gray-50 pb-24">
+      <ToastNotification />
 
-        {/* Header */}
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-          <div className="max-w-4xl mx-auto px-4 py-4">
-            <div className="flex items-center gap-4">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setView("discover")}
+              className="p-2 hover:bg-gray-100 rounded-lg"
+            >
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900 flex-1">Notifications</h1>
+            {unreadNotifications > 0 && (
               <button
-                onClick={() => setView("discover")}
-                className="p-2 hover:bg-gray-100 rounded-lg"
+                onClick={markAllNotificationsRead}
+                className="text-sm text-indigo-600 font-medium hover:text-indigo-800"
               >
-                <ArrowLeft className="w-6 h-6" />
+                Mark all read
               </button>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Notifications
-              </h1>
-            </div>
-          </div>
-        </header>
-
-        {/* Notifications List */}
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 divide-y">
-            {/* Sample notifications - Replace with real data later */}
-            <div className="p-4 hover:bg-gray-50 cursor-pointer">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <UserPlus className="w-5 h-5 text-indigo-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-gray-900">
-                    <span className="font-semibold">John Doe</span> started
-                    following you
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">2 hours ago</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 hover:bg-gray-50 cursor-pointer">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Calendar className="w-5 h-5 text-green-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-gray-900">
-                    <span className="font-semibold">Music Festival</span> is
-                    happening tomorrow
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">5 hours ago</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 hover:bg-gray-50 cursor-pointer">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Heart className="w-5 h-5 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-gray-900">
-                    <span className="font-semibold">Sarah Smith</span> liked
-                    your post
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">1 day ago</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Empty state if no notifications */}
-            {notifications.length === 0 && (
-              <div className="p-12 text-center">
-                <div className="text-6xl mb-4 opacity-40">🔔</div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  No notifications yet
-                </h3>
-                <p className="text-gray-600">
-                  We'll notify you when something happens
-                </p>
-              </div>
             )}
           </div>
         </div>
+      </header>
 
-        {/* Bottom Navigation */}
-        {/* Include your existing bottom nav here */}
+      {/* Notifications List */}
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 divide-y">
+          {notifications.length === 0 ? (
+            <div className="p-12 text-center">
+              <div className="text-6xl mb-4 opacity-40">🔔</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">No notifications yet</h3>
+              <p className="text-gray-600">We'll notify you when something happens</p>
+            </div>
+          ) : (
+            notifications.map((notif) => (
+              <div
+                key={notif.id}
+                onClick={() => markNotificationRead(notif.id)}
+                className={`p-4 hover:bg-gray-50 cursor-pointer ${!notif.is_read ? 'bg-indigo-50' : ''}`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-lg">🔔</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-gray-900">{notif.message}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {new Date(notif.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                  {!notif.is_read && (
+                    <div className="w-2 h-2 bg-indigo-600 rounded-full mt-2 flex-shrink-0"></div>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
-    );
-  }
+
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+        <div className="max-w-screen-xl mx-auto px-4">
+          <div className="flex items-center justify-around py-2">
+            <button
+              onClick={() => { setView("discover"); fetchFeedPosts(); }}
+              className="flex flex-col items-center gap-1 px-4 py-2 text-gray-500"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              <span className="text-xs font-medium">Feed</span>
+            </button>
+
+            <button
+              onClick={() => setView("explore")}
+              className="flex flex-col items-center gap-1 px-4 py-2 text-gray-500"
+            >
+              <Search className="w-6 h-6" />
+              <span className="text-xs font-medium">Explore</span>
+            </button>
+
+            <button
+              onClick={() => { if (user) { setView("organizer"); } else { showInfoToast("Please login to create"); setView("login"); } }}
+              className="flex flex-col items-center gap-1 px-4 py-2 text-gray-900"
+            >
+              <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center -mt-6 shadow-sm">
+                <Plus className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-xs font-medium mt-1">Create</span>
+            </button>
+
+            <button
+              onClick={() => { if (user) { setView("my-events"); } else { showInfoToast("Please login to view events"); setView("login"); } }}
+              className="flex flex-col items-center gap-1 px-4 py-2 text-gray-500"
+            >
+              <Calendar className="w-6 h-6" />
+              <span className="text-xs font-medium">Events</span>
+            </button>
+
+            <button
+              onClick={() => setView("profile")}
+              className="flex flex-col items-center gap-1 px-4 py-2 text-gray-500"
+            >
+              {user?.profile_picture ? (
+                <img src={user.profile_picture} alt={user.name} className="w-6 h-6 rounded-full object-cover border border-gray-300" />
+              ) : (
+                <UserIcon className="w-6 h-6" />
+              )}
+              <span className="text-xs font-medium">Profile</span>
+            </button>
+          </div>
+        </div>
+      </nav>
+    </div>
+  );
+}
 
   // Event Chat View
 
