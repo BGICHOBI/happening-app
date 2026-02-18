@@ -2172,7 +2172,8 @@ const startPolling = (eventId) => {
     if (!event || !event.date || !event.time) return null;
 
     try {
-      const eventDateTime = new Date(`${event.date}T${event.time}`);
+      const dateStr = event.date.split('T')[0];
+const eventDateTime = new Date(`${dateStr}T${event.time}`);
       const now = new Date();
       const diff = eventDateTime - now;
 
@@ -3020,30 +3021,48 @@ const handleDeleteFeedComment = async (commentId, postId) => {
         let data = await response.json();
 
         // Client-side filtering by event phase for accuracy
-        if (phase) {
-          data = data.filter((post) => {
-            const event = events.find((e) => e.id === post.event_id);
-            if (!event) return false;
+        // Client-side filtering by event phase for accuracy
+// Client-side filtering by event phase for accuracy
+if (phase) {
+  console.log('🔍 Filtering phase:', phase);
+  console.log('🔍 Events available:', events.length);
+  console.log('🔍 Posts before filter:', data.length);
+  
+  data = data.filter((post) => {
+  const event = events.find((e) => e.id === post.event_id);
+  if (!event) {
+    console.log('❌ No event found for post:', post.event_id);
+    return false;
+  }
 
-            const eventDateTime = new Date(`${event.date}T${event.time}`);
-            const now = new Date();
-            const eventEndTime = new Date(
-              eventDateTime.getTime() + 6 * 60 * 60 * 1000,
-            ); // Assume 6hr duration
+  console.log('📅 Event:', event.title, 'Date:', event.date, 'Time:', event.time);
+  
+  const dateStr = event.date.split('T')[0];
+const eventDateTime = new Date(`${dateStr}T${event.time}`);
+  const now = new Date();
+  const eventEndTime = new Date(eventDateTime.getTime() + 6 * 60 * 60 * 1000);
+  
+  console.log('🕐 Now:', now);
+  console.log('🕐 Event starts:', eventDateTime);
+  console.log('🕐 Event ends:', eventEndTime);
 
-            if (phase === "live") {
-              // Live: event has started but not ended
-              return now >= eventDateTime && now <= eventEndTime;
-            } else if (phase === "upcoming") {
-              // Upcoming: event hasn't started yet
-              return now < eventDateTime;
-            } else if (phase === "past") {
-              // Past: event has ended
-              return now > eventEndTime;
-            }
-            return true;
-          });
-        }
+  if (phase === "live") {
+    const isLive = now >= eventDateTime && now <= eventEndTime;
+    console.log('🔴 Is Live?', isLive);
+    return isLive;
+  } else if (phase === "upcoming") {
+    const isUpcoming = now < eventDateTime;
+    console.log('⏭️ Is Upcoming?', isUpcoming);
+    return isUpcoming;
+  } else if (phase === "past") {
+    const isPast = now > eventEndTime;
+    console.log('⏮️ Is Past?', isPast);
+    return isPast;
+  }
+  return true;
+});
+  console.log('🔍 Posts after filter:', data.length);
+}
 
         setFeedPosts(data);
        if (authToken) {
@@ -3515,7 +3534,8 @@ const handleDeleteFeedComment = async (commentId, postId) => {
     if (!event || !event.date || !event.time) return "upcoming";
 
     try {
-      const eventDateTime = new Date(`${event.date}T${event.time}`);
+      const dateStr = event.date.split('T')[0];
+const eventDateTime = new Date(`${dateStr}T${event.time}`);
       const now = new Date();
       const hoursDiff = (eventDateTime - now) / (1000 * 60 * 60);
 
@@ -3923,7 +3943,8 @@ const handleDeleteFeedComment = async (commentId, postId) => {
     }
 
     if (phase === "starting-soon") {
-      const eventDateTime = new Date(`${event.date}T${event.time}`);
+      const dateStr = event.date.split('T')[0];
+const eventDateTime = new Date(`${dateStr}T${event.time}`);
       const now = new Date();
       const hoursUntil = Math.ceil((eventDateTime - now) / (1000 * 60 * 60));
 
@@ -5748,10 +5769,13 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                     For You
                   </button>
                   <button
-                    onClick={() => {
-                      setFeedFilter("live");
-                      fetchFeedPosts("live");
-                    }}
+                    onClick={async () => {
+  setFeedFilter("live");
+  if (events.length === 0) {
+    await fetchEvents();
+  }
+  fetchFeedPosts("live");
+}}
                     className={`px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${feedFilter === "live"
                       ? "bg-gray-900 text-white"
                       : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
@@ -5761,10 +5785,13 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                   </button>
 
                   <button
-                    onClick={() => {
-                      setFeedFilter("upcoming");
-                      fetchFeedPosts("upcoming");
-                    }}
+                   onClick={async () => {
+  setFeedFilter("upcoming");
+  if (events.length === 0) {
+    await fetchEvents();
+  }
+  fetchFeedPosts("upcoming");
+}}
                     className={`px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${feedFilter === "upcoming"
                       ? "bg-gray-900 text-white"
                       : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
@@ -5773,10 +5800,13 @@ const handleDeleteFeedComment = async (commentId, postId) => {
                     Upcoming
                   </button>
                   <button
-                    onClick={() => {
-                      setFeedFilter("past");
-                      fetchFeedPosts("past");
-                    }}
+                   onClick={async () => {
+  setFeedFilter("past");
+  if (events.length === 0) {
+    await fetchEvents();
+  }
+  fetchFeedPosts("past");
+}}
                     className={`px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${feedFilter === "past"
                       ? "bg-gray-900 text-white"
                       : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
