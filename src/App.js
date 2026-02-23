@@ -37,6 +37,14 @@ import {
   CheckCircle,
 } from "lucide-react";
 
+const requireVerification = () => {
+  if (user && !user.is_verified) {
+    showInfoToast("Almost there! Check your inbox and confirm your email to continue.");
+    return false;
+  }
+  return true;
+};
+
 // Helper function to get event CTA based on type
 const getEventCTA = (event) => {
   const { event_type, capacity, tickets_sold } = event;
@@ -154,11 +162,14 @@ const EventTypeBadge = ({ eventType }) => {
   );
 };
 
+
+
 // Isolated Comment Input Component
 const CommentInput = React.memo(({ postId, onSubmit, authToken, API_URL, showInfoToast, showSuccessToast, showErrorToast }) => {
   const [inputValue, setInputValue] = useState('');
   
   const handleSubmit = async () => {
+    if (!requireVerification()) return;
     if (!inputValue.trim()) return;
     
     try {
@@ -1355,11 +1366,22 @@ const [newEvent, setNewEvent] = useState({
 useEffect(() => {
   const params = new URLSearchParams(window.location.search);
   const token = params.get('token');
+  const verified = params.get('verified');
+
   if (token) {
     localStorage.setItem('authToken', token);
     setAuthToken(token);
     setView('discover');
-    // Clean up URL
+    window.history.replaceState({}, document.title, '/');
+  }
+
+  if (verified === 'true') {
+    showSuccessToast('Email verified successfully! You can now use all features.');
+    window.history.replaceState({}, document.title, '/');
+  }
+
+  if (verified === 'false') {
+    showErrorToast('Verification link is invalid or expired.');
     window.history.replaceState({}, document.title, '/');
   }
 }, []);
@@ -1570,6 +1592,7 @@ const handleSignup = async (e) => {
   };
 
   const fetchEvents = async () => {
+    if (!requireVerification()) return;
     try {
       setLoading(true);
       const response = await fetch(`${API_URL}/api/events`);
@@ -1583,6 +1606,7 @@ const handleSignup = async (e) => {
   };
 
   const handleImageUpload = async (file) => {
+    if (!requireVerification()) return;
     if (!file) return;
 
     setUploadingImage(true);
@@ -1610,6 +1634,7 @@ const handleSignup = async (e) => {
   };
 
   const handleProfilePictureUpload = async (file) => {
+    if (!requireVerification()) return;
     if (!file) return;
 
     setUploadingProfilePic(true);
@@ -1639,6 +1664,7 @@ const handleSignup = async (e) => {
   };
 
   const handleSaveProfile = (bio, interests) => {
+    if (!requireVerification()) return;
     // Update user object with new bio and interests
     setUser({
       ...user,
@@ -1673,6 +1699,7 @@ const handleSignup = async (e) => {
   });
 
   const handleLike = (eventId) => {
+    if (!requireVerification()) return;
     setLikedEvents((prev) =>
       prev.includes(eventId)
         ? prev.filter((id) => id !== eventId)
@@ -1681,6 +1708,7 @@ const handleSignup = async (e) => {
   };
 
 const handleCreateEvent = async () => {
+  if (!requireVerification()) return;
   try {
     // Validation
     const errors = {};
@@ -1876,6 +1904,7 @@ const handleCreateEvent = async () => {
   };
 
 const handleRSVP = async (eventId, status) => {
+  if (!requireVerification()) return;
   if (!authToken) {
     showInfoToast("Please login to RSVP");
     setView("login");
@@ -1971,6 +2000,7 @@ if (event && event.organizer_id && event.organizer_id !== user.id) {
   };
 
   const handleShare = (event) => {
+    if (!requireVerification()) return;
     const eventUrl = `${window.location.origin}?event=${event.id}`;
     const shareText = `Check out this event: ${event.title}\n${event.date} at ${event.time}\n${event.location}\n\n`;
     // Show share options
@@ -2033,6 +2063,7 @@ if (event && event.organizer_id && event.organizer_id !== user.id) {
   };
 
   const handleReaction = async (postId, reaction) => {
+    if (!requireVerification()) return;
     if (!authToken) {
       showInfoToast("Please login to react");
       return;
@@ -2069,6 +2100,7 @@ if (event && event.organizer_id && event.organizer_id !== user.id) {
   };
 
   const handleAddComment = async (postId, comment, parentCommentId = null) => {
+    if (!requireVerification()) return;
     if (!authToken) {
       showInfoToast("Please login to comment");
       return;
@@ -2440,6 +2472,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
   }, [user, buddies, eventRSVPs]);
 
   const handleSendMessage = async (eventId) => {
+    if (!requireVerification()) return;
     if (!authToken) {
       showInfoToast("Please login to send messages");
       return;
@@ -2555,6 +2588,7 @@ const handleDeleteFeedComment = async (commentId, postId) => {
   };
 
 const fetchNotifications = async () => {
+  if (!requireVerification()) return;
   if (!authToken) return;
   try {
     const response = await fetch(`${API_URL}/api/notifications`, {
@@ -2933,6 +2967,7 @@ const markAllNotificationsRead = async () => {
 
   // Buddy system functions
   const sendBuddyRequest = async (receiverId, receiverName) => {
+    if (!requireVerification()) return;
     if (!authToken) {
       showInfoToast("Please login to send buddy requests");
       return;
@@ -2976,6 +3011,7 @@ const markAllNotificationsRead = async () => {
   };
 
   const acceptBuddyRequest = async (requestId, senderId) => {
+    if (!requireVerification()) return;
   if (!authToken) return;
 
   try {
@@ -3012,6 +3048,7 @@ const markAllNotificationsRead = async () => {
 };
 
   const declineBuddyRequest = async (requestId) => {
+    if (!requireVerification()) return;
     if (!authToken) return;
 
     try {
@@ -3419,6 +3456,7 @@ const eventDateTime = new Date(`${dateStr}T${event.time}`);
 };
 
  const handleAddFeedComment = async (postId, parentCommentId = null) => {
+  if (!requireVerification()) return;
   if (!authToken) {
     showInfoToast("Please login to comment");
     return;
@@ -5763,6 +5801,36 @@ const eventDateTime = new Date(`${dateStr}T${event.time}`);
                 </div>
               </div>
             </header>
+
+{/* Email verification banner */}
+{user && !user.is_verified && (
+  <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-3">
+    <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+      <div className="flex items-center gap-2">
+        <span className="text-yellow-600">⚠️</span>
+        <p className="text-sm text-yellow-800 font-medium">
+          You’re almost in! Check your email to complete signup.
+        </p>
+      </div>
+      <button
+        onClick={async () => {
+          try {
+            await fetch(`${API_URL}/api/auth/resend-verification`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${authToken}` }
+            });
+            showSuccessToast('Verification email sent!');
+          } catch (error) {
+            showErrorToast('Failed to send email');
+          }
+        }}
+        className="text-xs font-semibold text-yellow-700 hover:text-yellow-900 whitespace-nowrap underline"
+      >
+        Resend email
+      </button>
+    </div>
+  </div>
+)}
 
             {/* Feed Filters - Active state uses charcoal */}
             <div className="bg-white border-b sticky top-[73px] z-40">
