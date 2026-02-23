@@ -1351,6 +1351,19 @@ const [newEvent, setNewEvent] = useState({
     initAuth();
   }, []); // Empty array = run once on mount
 
+  
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+  if (token) {
+    localStorage.setItem('authToken', token);
+    setAuthToken(token);
+    setView('discover');
+    // Clean up URL
+    window.history.replaceState({}, document.title, '/');
+  }
+}, []);
+
 
   useEffect(() => {
     fetchEvents();
@@ -5184,7 +5197,7 @@ const eventDateTime = new Date(`${dateStr}T${event.time}`);
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => showInfoToast("Google login coming soon!")}
+                    onClick={() => window.location.href = `${API_URL}/api/auth/google`}
                     className="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all font-medium text-gray-700"
                   >
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -5642,7 +5655,7 @@ const eventDateTime = new Date(`${dateStr}T${event.time}`);
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => showInfoToast("Google signup coming soon!")}
+                    onClick={() => window.location.href = `${API_URL}/api/auth/google`}
                     className="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all font-medium text-gray-700"
                   >
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
