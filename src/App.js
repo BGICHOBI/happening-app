@@ -1903,6 +1903,23 @@ const handleRSVP = async (eventId, status) => {
       fetchEvents();  // ← ADD THIS LINE
       
       showSuccessToast('RSVP updated!');
+      // Notify event organizer
+const event = events.find(e => e.id === eventId);
+if (event && event.organizer_id && event.organizer_id !== user.id) {
+  await fetch(`${API_URL}/api/notifications`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`
+    },
+    body: JSON.stringify({
+      user_id: event.organizer_id,
+      type: 'rsvp',
+      message: `${user.name} is ${status} to your event "${event.title}"`,
+      related_id: eventId
+    })
+  });
+}
     }
   } catch (error) {
     console.error("Error saving RSVP:", error);
@@ -2789,11 +2806,28 @@ const markAllNotificationsRead = async () => {
       });
 
       if (response.ok) {
-        setIsFollowing({
-          ...isFollowing,
-          [`${followedType}-${followedId}`]: true,
-        });
-        fetchFollowerCount(followedType, followedId);
+  setIsFollowing({
+    ...isFollowing,
+    [`${followedType}-${followedId}`]: true,
+  });
+  fetchFollowerCount(followedType, followedId);
+  // Notify the followed user
+  if (followedType === 'user') {
+    await fetch(`${API_URL}/api/notifications`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`
+      },
+      body: JSON.stringify({
+        user_id: followedId,
+        type: 'follow',
+        message: `${user.name} started following you`,
+        related_id: user.id
+      })
+    });
+  }
+
       } else {
         const data = await response.json();
         showErrorToast(data.error || "Failed to follow");
