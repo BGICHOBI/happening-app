@@ -297,14 +297,7 @@ function App() {
   const [eventRSVPs, setEventRSVPs] = useState({}); // Track all RSVPs for events
   const [searchByTag, setSearchByTag] = useState(null);
 
-  const requireVerification = () => {
-  if (!user) return true; // Don't block if user not loaded yet
-  if (!user.is_verified) {
-    showInfoToast("Almost there! Check your inbox and confirm your email to continue.");
-    return false;
-  }
-  return true;
-};
+  
 
   // ADD RECOMMENDATION STATES:
   const [recommendations, setRecommendations] = useState([]);
@@ -467,6 +460,8 @@ const commentInputRefs = useRef({});
     role: "organizer",
   });
 
+
+
   // Form validation state
   const [loginErrors, setLoginErrors] = useState({ email: "", password: "" });
   const [signupErrors, setSignupErrors] = useState({
@@ -533,6 +528,14 @@ const [newEvent, setNewEvent] = useState({
     );
   };
 
+const requireVerification = () => {
+  if (!user) return true;
+  if (!user.is_verified) {
+    showInfoToast("Almost there! Check your inbox and confirm your email to continue.");
+    return false;
+  }
+  return true;
+};
   // Stats Modal Component
   const StatsModal = ({
     show,
