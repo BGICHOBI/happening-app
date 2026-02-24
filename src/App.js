@@ -37,14 +37,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 
-const requireVerification = () => {
-  if (!user) return true; // Don't block if user not loaded yet
-  if (!user.is_verified) {
-    showInfoToast("Almost there! Check your inbox and confirm your email to continue.");
-    return false;
-  }
-  return true;
-};
+
 
 // Helper function to get event CTA based on type
 const getEventCTA = (event) => {
@@ -303,6 +296,15 @@ function App() {
   const [rsvpStatus, setRsvpStatus] = useState({}); // Track RSVP status for each event
   const [eventRSVPs, setEventRSVPs] = useState({}); // Track all RSVPs for events
   const [searchByTag, setSearchByTag] = useState(null);
+
+  const requireVerification = () => {
+  if (!user) return true; // Don't block if user not loaded yet
+  if (!user.is_verified) {
+    showInfoToast("Almost there! Check your inbox and confirm your email to continue.");
+    return false;
+  }
+  return true;
+};
 
   // ADD RECOMMENDATION STATES:
   const [recommendations, setRecommendations] = useState([]);
