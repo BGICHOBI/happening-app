@@ -38,7 +38,8 @@ import {
 } from "lucide-react";
 
 const requireVerification = () => {
-  if (user && !user.is_verified) {
+  if (!user) return true; // Don't block if user not loaded yet
+  if (!user.is_verified) {
     showInfoToast("Almost there! Check your inbox and confirm your email to continue.");
     return false;
   }
