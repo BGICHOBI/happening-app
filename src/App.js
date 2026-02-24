@@ -528,14 +528,7 @@ const [newEvent, setNewEvent] = useState({
     );
   };
 
-const requireVerification = () => {
-  if (!user) return true;
-  if (!user.is_verified) {
-    showInfoToast("Almost there! Check your inbox and confirm your email to continue.");
-    return false;
-  }
-  return true;
-};
+
   // Stats Modal Component
   const StatsModal = ({
     show,
@@ -1318,6 +1311,15 @@ const requireVerification = () => {
       actionText={null}
     />
   );
+
+const requireVerification = () => {
+  if (!user) return true;
+  if (!user.is_verified) {
+    showInfoToast("Almost there! Check your inbox and confirm your email to continue.");
+    return false;
+  }
+  return true;
+};
 
   useEffect(() => {
     const initAuth = async () => {
