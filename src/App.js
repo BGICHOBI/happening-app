@@ -4595,7 +4595,10 @@ const PaymentModal = ({ show, onClose, event }) => {
 
   const isTicketed = event.event_type === 'ticketed';
 
+  
+
   const handlePay = async () => {
+
     if (!localPhone || localPhone.length < 9) {
   showErrorToast('Enter a valid phone number');
   return;
@@ -4755,23 +4758,68 @@ setLocalLoading(true);
               </button>
             </div>
           ) : (
-            /* Success State */
-            <div className="text-center py-6 space-y-4">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                <span className="text-4xl">📱</span>
+           /* Success State */
+            <div className="text-center py-4 space-y-4">
+              {/* Animated checkmark */}
+              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto animate-bounce">
+                <span className="text-5xl">📱</span>
               </div>
+
               <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Check Your Phone!</h3>
+                <h3 className="text-2xl font-black text-gray-900 mb-1">
+                  {isTicketed ? '🎟️ Almost There!' : '💝 Thank You!'}
+                </h3>
                 <p className="text-gray-600 text-sm">
-                 An M-Pesa prompt has been sent to <span className="font-bold text-gray-900">{localPhone}</span>.
-                  Enter your PIN to complete the payment.
+                  M-Pesa prompt sent to{' '}
+                  <span className="font-bold text-gray-900">{localPhone}</span>
                 </p>
               </div>
+
+              {/* Steps */}
+              <div className="bg-gray-50 rounded-xl p-4 text-left space-y-3">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wide">Complete your payment</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-white text-xs font-bold">1</span>
+                  </div>
+                  <p className="text-sm text-gray-700">Check your phone for the M-Pesa prompt</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-white text-xs font-bold">2</span>
+                  </div>
+                  <p className="text-sm text-gray-700">Enter your M-Pesa PIN</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 bg-indigo-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-white text-xs font-bold">3</span>
+                  </div>
+                  <p className="text-sm text-gray-700">
+                    {isTicketed ? 'Your ticket will be confirmed instantly' : 'Your contribution will be recorded'}
+                  </p>
+                </div>
+              </div>
+
               <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
                 <p className="text-xs text-yellow-800 font-medium">
-                  ⏱️ The prompt expires in 60 seconds. Check your phone now!
+                  ⏱️ Prompt expires in 60 seconds. Check your phone now!
                 </p>
               </div>
+
+              {/* Event summary */}
+              <div className="bg-indigo-50 rounded-xl p-3 text-left">
+                <p className="text-xs font-bold text-indigo-600 mb-1">
+                  {isTicketed ? 'TICKET FOR' : 'CONTRIBUTING TO'}
+                </p>
+                <p className="font-bold text-gray-900 text-sm">{event.title}</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {isTicketed 
+                    ? `KES ${event.ticket_price?.toLocaleString() || event.price}`
+                    : `KES ${Number(localAmount).toLocaleString()}`
+                  }
+                </p>
+              </div>
+
               <button
                 onClick={handleClose}
                 className="w-full py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-all"
