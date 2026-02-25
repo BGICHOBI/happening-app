@@ -299,6 +299,13 @@ function App() {
 
   
 
+const [showPaymentModal, setShowPaymentModal] = useState(false);
+const [paymentPhone, setPaymentPhone] = useState('');
+const [paymentAmount, setPaymentAmount] = useState('');
+const [paymentLoading, setPaymentLoading] = useState(false);
+const [paymentSuccess, setPaymentSuccess] = useState(false);
+const [checkoutRequestId, setCheckoutRequestId] = useState('');
+
   // ADD RECOMMENDATION STATES:
   const [recommendations, setRecommendations] = useState([]);
   const [showRecommendations, setShowRecommendations] = useState(true);
@@ -347,6 +354,9 @@ const suggestedTags = [
   const [showImageModal, setShowImageModal] = useState(false);
   const [modalImage, setModalImage] = useState("");
   const [modalEventTitle, setModalEventTitle] = useState("");
+
+
+
 
   // Direct messages state
   const [conversations, setConversations] = useState([]);
@@ -4575,6 +4585,207 @@ const eventDateTime = new Date(`${dateStr}T${event.time}`);
     );
   };
 
+const PaymentModal = ({ show, onClose, event }) => {
+  const [localPhone, setLocalPhone] = React.useState('');
+  const [localAmount, setLocalAmount] = React.useState('');
+  const [localLoading, setLocalLoading] = React.useState(false);
+  const [localSuccess, setLocalSuccess] = React.useState(false);
+
+  if (!show || !event) return null;
+
+  const isTicketed = event.event_type === 'ticketed';
+
+  const handlePay = async () => {
+    if (!localPhone || localPhone.length < 9) {
+  showErrorToast('Enter a valid phone number');
+  return;
+}
+if (!isTicketed && (!localAmount || localAmount < 1)) {
+  showErrorToast('Enter a valid amount');
+  return;
+}
+
+// Format phone: 07xx -> 2547xx
+let phone = localPhone.replace(/\s/g, '');
+    if (phone.startsWith('0')) phone = '254' + phone.slice(1);
+    if (phone.startsWith('+')) phone = phone.slice(1);
+
+   const amount = isTicketed ? event.ticket_price : localAmount;
+
+setLocalLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/payments/stk-push`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({
+          phone,
+          amount,
+          event_id: event.id,
+          payment_type: isTicketed ? 'ticket' : 'contribution',
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setLocalSuccess(true);
+      } else {
+        showErrorToast(data.error || 'Payment failed');
+      }
+    } catch (err) {
+      showErrorToast('Something went wrong');
+    }
+    setLocalLoading(false);
+  };
+
+ const handleClose = () => {
+    setLocalPhone('');
+    setLocalAmount('');
+    setLocalLoading(false);
+    setLocalSuccess(false);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-end sm:items-center justify-center p-4">
+      <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl overflow-hidden">
+        
+        {/* Header */}
+        <div className={`p-5 ${isTicketed ? 'bg-purple-600' : 'bg-pink-600'}`}>
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-xl font-bold text-white">
+              {isTicketed ? '🎟️ Buy Ticket' : '💝 Contribute'}
+            </h2>
+            <button onClick={handleClose} className="p-1 hover:bg-white/20 rounded-full transition-all">
+              <X className="w-5 h-5 text-white" />
+            </button>
+          </div>
+          <p className="text-white/80 text-sm">{event.title}</p>
+        </div>
+
+        <div className="p-5">
+          {!localSuccess ? (
+            <div className="space-y-4">
+              {/* Amount Display (ticketed) or Input (contribution) */}
+              {isTicketed ? (
+                <div className="bg-purple-50 rounded-xl p-4 text-center">
+                  <p className="text-sm text-gray-500 mb-1">Ticket Price</p>
+                  <p className="text-3xl font-black text-purple-700">
+                    KES {event.ticket_price?.toLocaleString() || event.price}
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Amount (KES)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 500"
+                    value={localAmount}
+                    onChange={(e) => setLocalAmount(e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-pink-400 text-lg font-semibold"
+                  />
+                  {/* Quick amount buttons */}
+                  <div className="flex gap-2 mt-2">
+                   {[100, 200, 500, 1000].map(amt => (
+                      <button
+                        key={amt}
+                        onClick={() => setLocalAmount(amt)}
+                        className="flex-1 py-1.5 text-xs font-semibold bg-gray-100 hover:bg-pink-100 hover:text-pink-700 rounded-lg transition-all"
+                      >
+                        {amt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Phone Input */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  M-Pesa Phone Number
+                </label>
+                <div className="flex items-center border-2 border-gray-200 rounded-xl focus-within:border-green-400 overflow-hidden">
+                  <span className="px-3 py-3 bg-gray-50 text-gray-500 font-semibold text-sm border-r-2 border-gray-200">
+                    🇰🇪 +254
+                  </span>
+                  <input
+                    type="tel"
+                    placeholder="07XX XXX XXX"
+                    value={localPhone}
+                    onChange={(e) => setLocalPhone(e.target.value)}
+                    className="flex-1 px-3 py-3 focus:outline-none text-gray-900 font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* M-Pesa branding */}
+              <div className="flex items-center gap-2 bg-green-50 rounded-xl p-3">
+                <span className="text-2xl">📱</span>
+                <div>
+                  <p className="text-xs font-bold text-green-800">Powered by M-Pesa</p>
+                  <p className="text-xs text-green-600">You'll receive a prompt on your phone</p>
+                </div>
+              </div>
+
+              {/* Pay Button */}
+              <button
+                onClick={handlePay}
+                disabled={localLoading}
+                className={`w-full py-4 rounded-xl font-bold text-white text-lg shadow-lg transition-all ${
+                  localLoading
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : isTicketed
+                    ? 'bg-purple-600 hover:bg-purple-700 active:scale-95'
+                    : 'bg-pink-600 hover:bg-pink-700 active:scale-95'
+                }`}
+              >
+                {localLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Sending prompt...
+                  </span>
+                ) : (
+                  `Pay ${isTicketed ? `KES ${event.ticket_price?.toLocaleString() || event.price}` : localAmount ? `KES ${Number(localAmount).toLocaleString()}` : 'Now'}`
+                )}
+              </button>
+            </div>
+          ) : (
+            /* Success State */
+            <div className="text-center py-6 space-y-4">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                <span className="text-4xl">📱</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Check Your Phone!</h3>
+                <p className="text-gray-600 text-sm">
+                 An M-Pesa prompt has been sent to <span className="font-bold text-gray-900">{localPhone}</span>.
+                  Enter your PIN to complete the payment.
+                </p>
+              </div>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
+                <p className="text-xs text-yellow-800 font-medium">
+                  ⏱️ The prompt expires in 60 seconds. Check your phone now!
+                </p>
+              </div>
+              <button
+                onClick={handleClose}
+                className="w-full py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-all"
+              >
+                Done
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
   // Recommendation Card Component
   const RecommendationCard = ({ event, reasons }) => {
     return (
@@ -7447,8 +7658,13 @@ const eventDateTime = new Date(`${dateStr}T${event.time}`);
           />
         )}
 
-        <ToastNotification />
-
+        
+<ToastNotification />
+<PaymentModal
+  show={showPaymentModal}
+  onClose={() => setShowPaymentModal(false)}
+  event={selectedEvent}
+/>
         <div className="max-w-4xl mx-auto">
         {/* Hero Section - Immersive Poster */}
 <div className="relative h-[450px] md:h-[500px] overflow-hidden">
@@ -7730,8 +7946,8 @@ const eventDateTime = new Date(`${dateStr}T${event.time}`);
       onClick={() => {
         if (user) {
           if (selectedEvent.event_type === 'ticketed' || selectedEvent.event_type === 'contribution_based') {
-            showInfoToast('Payment integration coming soon!');
-          } else if ((selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid') && selectedEvent.online_link && isEventLive(selectedEvent)) {
+  setShowPaymentModal(true);
+} else if ((selectedEvent.event_type === 'online' || selectedEvent.event_type === 'hybrid') && selectedEvent.online_link && isEventLive(selectedEvent)) {
             window.open(selectedEvent.online_link, '_blank');
             handleRSVP(selectedEvent.id, 'going');
           } else {
@@ -9130,11 +9346,10 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
     if (event.event_type === 'online' && event.online_link) {
       window.open(event.online_link, '_blank');
       if (user) handleRSVP(event.id, 'going');
-    } else if (event.event_type === 'ticketed') {
-      showInfoToast('Ticket purchase coming soon!');
-    } else if (event.event_type === 'contribution_based') {
-      showInfoToast('Contribution system coming soon!');
-    } else if (event.event_type === 'private_invite') {
+   } else if (event.event_type === 'ticketed' || event.event_type === 'contribution_based') {
+  setSelectedEvent(event);
+  setShowPaymentModal(true);
+} else if (event.event_type === 'private_invite') {
       if (user) {
         showInfoToast('Invite request sent!');
         handleRSVP(event.id, 'interested');
