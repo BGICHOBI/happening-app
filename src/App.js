@@ -428,6 +428,9 @@ const suggestedTags = [
   // My Events page state
   const [eventsFilter, setEventsFilter] = useState("all");
 
+const [myTickets, setMyTickets] = useState([]);
+const [ticketsLoading, setTicketsLoading] = useState(false);
+
   // ADD MY EVENTS DISCOVERY STATES:
   const [nearbyEvents, setNearbyEvents] = useState([]);
   const [popularEvents, setPopularEvents] = useState([]);
@@ -1608,6 +1611,23 @@ const handleSignup = async (e) => {
     setView("login");
     showSuccessToast("Logged out successfully");
   };
+
+const fetchMyTickets = async () => {
+  if (!authToken) return;
+  setTicketsLoading(true);
+  try {
+    const res = await fetch(`${API_URL}/api/payments/my-tickets`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setMyTickets(data);
+    }
+  } catch (err) {
+    console.error('Failed to fetch tickets:', err);
+  }
+  setTicketsLoading(false);
+};
 
   const fetchEvents = async () => {
     if (!requireVerification()) return;
@@ -9544,7 +9564,7 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
   }
 
   // Profile Page View
-  // Profile Page View
+  // Profile View
 
   if (authLoading) {
     return (
@@ -10238,7 +10258,11 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
     );
   }
 
-  if (view === "my-events") {
+ if (view === "my-events") {
+    if (user && myTickets.length === 0 && !ticketsLoading) {
+      fetchMyTickets();
+    }
+
     if (!user) {
       return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -10800,6 +10824,110 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
               </div>
             </div>
           )}
+
+          {/* My Tickets Section */}
+          {(myTickets.length > 0 || ticketsLoading) && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-md font-semibold text-gray-700 flex items-center gap-2">
+                  🎟️ My Tickets ({myTickets.length})
+                </h3>
+              </div>
+
+              {ticketsLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {myTickets.map((ticket) => (
+                    <div
+                      key={ticket.id}
+                      className="bg-white rounded-2xl shadow-md overflow-hidden border border-purple-100"
+                    >
+                      {/* Ticket Header */}
+                      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 flex items-center gap-4">
+                        <img
+                          src={ticket.image}
+                          alt={ticket.event_title}
+                          className="w-16 h-16 rounded-xl object-cover border-2 border-white/30 flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-white text-lg leading-tight truncate">
+                            {ticket.event_title}
+                          </h4>
+                          <p className="text-purple-200 text-sm mt-0.5">
+                            {new Date(ticket.date).toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric',
+                            })} • {ticket.time}
+                          </p>
+                        </div>
+                        <div className="flex-shrink-0">
+                          <div className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            ticket.status === 'valid' 
+                              ? 'bg-green-400 text-green-900' 
+                              : ticket.status === 'used'
+                              ? 'bg-gray-400 text-gray-900'
+                              : 'bg-red-400 text-red-900'
+                          }`}>
+                            {ticket.status === 'valid' ? '✓ Valid' : 
+                             ticket.status === 'used' ? 'Used' : 'Cancelled'}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Ticket Body - Dashed separator */}
+                      <div className="relative">
+                        <div className="absolute left-0 right-0 top-0 flex items-center">
+                          <div className="w-4 h-4 bg-gray-50 rounded-full -mt-2 -ml-2 border border-purple-100"></div>
+                          <div className="flex-1 border-t-2 border-dashed border-purple-100 mx-1"></div>
+                          <div className="w-4 h-4 bg-gray-50 rounded-full -mt-2 -mr-2 border border-purple-100"></div>
+                        </div>
+
+                        <div className="p-4 pt-5 grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Location</p>
+                            <p className="text-sm font-semibold text-gray-900 mt-0.5">{ticket.location}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Amount Paid</p>
+                            <p className="text-sm font-semibold text-gray-900 mt-0.5">KES {Number(ticket.amount).toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Ticket ID</p>
+                            <p className="text-sm font-semibold text-gray-900 mt-0.5">#{ticket.id}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">M-Pesa Code</p>
+                            <p className="text-sm font-semibold text-gray-900 mt-0.5">{ticket.mpesa_code || 'Pending'}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* View Event Button */}
+                      <div className="px-4 pb-4">
+                        <button
+                          onClick={() => {
+                            const event = events.find(e => e.id === ticket.event_id);
+                            if (event) {
+                              setSelectedEvent(event);
+                              setView('event-detail');
+                            }
+                          }}
+                          className="w-full py-2.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-xl font-semibold text-sm transition-all"
+                        >
+                          View Event →
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
 
           {/* Empty State */}
           {userCreatedEvents.length === 0 &&
