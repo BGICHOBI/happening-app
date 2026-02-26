@@ -8130,7 +8130,7 @@ const OrganizerDashboard = ({ show, onClose, event }) => {
   </div>
 
 {/* Organizer Dashboard Button */}
-  {user && selectedEvent.organizer_id === user.id && (
+  {user && (selectedEvent.organizer_id === user.id || selectedEvent.user_id === user.id) && (
     <button
       onClick={() => {
         setShowOrganizerDashboard(true);
