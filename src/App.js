@@ -1814,13 +1814,17 @@ const handleCreateEvent = async () => {
       image: newEvent.image,
       highlights: [],
       
-      // NEW FIELDS FOR EVENT TYPES
+     // NEW FIELDS FOR EVENT TYPES
       event_type: eventType,
       visibility: newEvent.visibility,
       tags: selectedTags,
       capacity: newEvent.capacity,
       contribution_goal: newEvent.contribution_goal,
       online_link: newEvent.online_link,
+      mpesa_phone: newEvent.mpesa_phone || null,
+      mpesa_till: newEvent.mpesa_till || null,
+      mpesa_paybill: newEvent.mpesa_paybill || null,
+      mpesa_account_ref: newEvent.mpesa_account_ref || null,
       
       // Event settings based on type
       event_settings: {}
@@ -1912,6 +1916,10 @@ const handleCreateEvent = async () => {
       capacity: null,
       contribution_goal: null,
       online_link: '',
+      mpesa_phone: '',
+      mpesa_till: '',
+      mpesa_paybill: '',
+      mpesa_account_ref: '',
     });
     
     setEventType('open_attendance');
@@ -14083,7 +14091,7 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
       />
     </div>
 
-    <div>
+   <div>
       <label className="block text-sm font-medium mb-2">Capacity (optional)</label>
       <input
         type="number"
@@ -14092,6 +14100,69 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
         placeholder="Maximum tickets"
       />
+    </div>
+
+    {/* M-Pesa Payment Destination */}
+    <div className="border-t border-purple-200 pt-3">
+      <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+        📱 M-Pesa Payment Destination
+        <span className="text-xs font-normal text-red-500">*Required</span>
+      </h4>
+      <p className="text-xs text-gray-500 mb-3">Where should ticket payments be sent?</p>
+      
+      <div className="space-y-2">
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Phone Number (personal M-Pesa)</label>
+          <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-purple-400">
+            <span className="px-3 py-2 bg-gray-50 text-gray-500 text-sm border-r border-gray-300">🇰🇪 +254</span>
+            <input
+              type="tel"
+              value={newEvent.mpesa_phone || ''}
+              onChange={(e) => setNewEvent({ ...newEvent, mpesa_phone: e.target.value, mpesa_till: '', mpesa_paybill: '' })}
+              className="flex-1 px-3 py-2 focus:outline-none text-sm"
+              placeholder="07XX XXX XXX"
+            />
+          </div>
+        </div>
+
+        <div className="text-center text-xs text-gray-400 font-medium">— OR —</div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Till Number</label>
+            <input
+              type="text"
+              value={newEvent.mpesa_till || ''}
+              onChange={(e) => setNewEvent({ ...newEvent, mpesa_till: e.target.value, mpesa_phone: '', mpesa_paybill: '' })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+              placeholder="e.g. 123456"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Paybill Number</label>
+            <input
+              type="text"
+              value={newEvent.mpesa_paybill || ''}
+              onChange={(e) => setNewEvent({ ...newEvent, mpesa_paybill: e.target.value, mpesa_phone: '', mpesa_till: '' })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+              placeholder="e.g. 400200"
+            />
+          </div>
+        </div>
+
+        {newEvent.mpesa_paybill && (
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Account Reference</label>
+            <input
+              type="text"
+              value={newEvent.mpesa_account_ref || ''}
+              onChange={(e) => setNewEvent({ ...newEvent, mpesa_account_ref: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+              placeholder="e.g. EventName or your account number"
+            />
+          </div>
+        )}
+      </div>
     </div>
   </div>
 )}
@@ -14124,6 +14195,69 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
         placeholder="500 (Suggested)"
       />
+    </div>
+
+    {/* M-Pesa Payment Destination */}
+    <div className="border-t border-pink-200 pt-3">
+      <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+        📱 M-Pesa Payment Destination
+        <span className="text-xs font-normal text-red-500">*Required</span>
+      </h4>
+      <p className="text-xs text-gray-500 mb-3">Where should contributions be sent?</p>
+      
+      <div className="space-y-2">
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Phone Number (personal M-Pesa)</label>
+          <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-pink-400">
+            <span className="px-3 py-2 bg-gray-50 text-gray-500 text-sm border-r border-gray-300">🇰🇪 +254</span>
+            <input
+              type="tel"
+              value={newEvent.mpesa_phone || ''}
+              onChange={(e) => setNewEvent({ ...newEvent, mpesa_phone: e.target.value, mpesa_till: '', mpesa_paybill: '' })}
+              className="flex-1 px-3 py-2 focus:outline-none text-sm"
+              placeholder="07XX XXX XXX"
+            />
+          </div>
+        </div>
+
+        <div className="text-center text-xs text-gray-400 font-medium">— OR —</div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Till Number</label>
+            <input
+              type="text"
+              value={newEvent.mpesa_till || ''}
+              onChange={(e) => setNewEvent({ ...newEvent, mpesa_till: e.target.value, mpesa_phone: '', mpesa_paybill: '' })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 text-sm"
+              placeholder="e.g. 123456"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Paybill Number</label>
+            <input
+              type="text"
+              value={newEvent.mpesa_paybill || ''}
+              onChange={(e) => setNewEvent({ ...newEvent, mpesa_paybill: e.target.value, mpesa_phone: '', mpesa_till: '' })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 text-sm"
+              placeholder="e.g. 400200"
+            />
+          </div>
+        </div>
+
+        {newEvent.mpesa_paybill && (
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Account Reference</label>
+            <input
+              type="text"
+              value={newEvent.mpesa_account_ref || ''}
+              onChange={(e) => setNewEvent({ ...newEvent, mpesa_account_ref: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-400 text-sm"
+              placeholder="e.g. EventName or your account number"
+            />
+          </div>
+        )}
+      </div>
     </div>
   </div>
 )}
