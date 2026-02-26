@@ -431,6 +431,10 @@ const suggestedTags = [
 const [myTickets, setMyTickets] = useState([]);
 const [ticketsLoading, setTicketsLoading] = useState(false);
 
+const [showOrganizerDashboard, setShowOrganizerDashboard] = useState(false);
+const [eventSales, setEventSales] = useState(null);
+const [salesLoading, setSalesLoading] = useState(false);
+
   // ADD MY EVENTS DISCOVERY STATES:
   const [nearbyEvents, setNearbyEvents] = useState([]);
   const [popularEvents, setPopularEvents] = useState([]);
@@ -1627,6 +1631,22 @@ const fetchMyTickets = async () => {
     console.error('Failed to fetch tickets:', err);
   }
   setTicketsLoading(false);
+};
+
+const fetchEventSales = async (event_id) => {
+  setSalesLoading(true);
+  try {
+    const res = await fetch(`${API_URL}/api/payments/event-sales/${event_id}`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setEventSales(data);
+    }
+  } catch (err) {
+    console.error('Failed to fetch sales:', err);
+  }
+  setSalesLoading(false);
 };
 
   const fetchEvents = async () => {
@@ -4854,6 +4874,128 @@ setLocalLoading(true);
   );
 };
 
+const OrganizerDashboard = ({ show, onClose, event }) => {
+  if (!show || !event) return null;
+
+  const isTicketed = event.event_type === 'ticketed';
+  const isContribution = event.event_type === 'contribution_based';
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-end sm:items-center justify-center p-4">
+      <div className="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        
+        {/* Header */}
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-5 flex-shrink-0">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-xl font-bold text-white">📊 Sales Dashboard</h2>
+            <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-full transition-all">
+              <X className="w-5 h-5 text-white" />
+            </button>
+          </div>
+          <p className="text-white/80 text-sm">{event.title}</p>
+        </div>
+
+        <div className="overflow-y-auto flex-1 p-5 space-y-4">
+          {salesLoading ? (
+            <div className="flex justify-center py-12">
+              <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : eventSales ? (
+            <>
+              {/* Summary Cards */}
+              <div className="grid grid-cols-2 gap-3">
+                {(isTicketed || (!isTicketed && !isContribution)) && (
+                  <div className="bg-purple-50 rounded-xl p-4 text-center">
+                    <p className="text-3xl font-black text-purple-700">{eventSales.summary.total_tickets}</p>
+                    <p className="text-sm text-purple-600 font-medium mt-1">Tickets Sold</p>
+                  </div>
+                )}
+                {isContribution && (
+                  <div className="bg-pink-50 rounded-xl p-4 text-center">
+                    <p className="text-3xl font-black text-pink-700">{eventSales.summary.total_contributions}</p>
+                    <p className="text-sm text-pink-600 font-medium mt-1">Contributors</p>
+                  </div>
+                )}
+                <div className="bg-green-50 rounded-xl p-4 text-center">
+                  <p className="text-2xl font-black text-green-700">
+                    KES {eventSales.summary.total_revenue.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-green-600 font-medium mt-1">Total Revenue</p>
+                </div>
+              </div>
+
+              {/* Ticket Sales List */}
+              {eventSales.tickets.length > 0 && (
+                <div>
+                  <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    🎟️ Ticket Holders
+                    <span className="text-sm font-normal text-gray-500">({eventSales.tickets.length})</span>
+                  </h3>
+                  <div className="space-y-2">
+                    {eventSales.tickets.map((ticket) => (
+                      <div key={ticket.id} className="bg-gray-50 rounded-xl p-3 flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-gray-900 text-sm">{ticket.buyer_name}</p>
+                          <p className="text-xs text-gray-500">{ticket.mpesa_code} • {new Date(ticket.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-gray-900 text-sm">KES {Number(ticket.amount).toLocaleString()}</p>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                            ticket.status === 'valid' ? 'bg-green-100 text-green-700' :
+                            ticket.status === 'used' ? 'bg-gray-100 text-gray-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>
+                            {ticket.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Contributions List */}
+              {eventSales.contributions.length > 0 && (
+                <div>
+                  <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    💝 Contributors
+                    <span className="text-sm font-normal text-gray-500">({eventSales.contributions.length})</span>
+                  </h3>
+                  <div className="space-y-2">
+                    {eventSales.contributions.map((contribution) => (
+                      <div key={contribution.id} className="bg-gray-50 rounded-xl p-3 flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-gray-900 text-sm">{contribution.contributor_name}</p>
+                          <p className="text-xs text-gray-500">{contribution.mpesa_code} • {new Date(contribution.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <p className="font-bold text-pink-700 text-sm">KES {Number(contribution.amount).toLocaleString()}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Empty state */}
+              {eventSales.tickets.length === 0 && eventSales.contributions.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-4xl mb-3">📭</p>
+                  <p className="font-bold text-gray-900">No sales yet</p>
+                  <p className="text-sm text-gray-500 mt-1">Sales will appear here once payments come in</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-500">Failed to load sales data</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
   // Recommendation Card Component
   const RecommendationCard = ({ event, reasons }) => {
     return (
@@ -7733,6 +7875,11 @@ setLocalLoading(true);
   onClose={() => setShowPaymentModal(false)}
   event={selectedEvent}
 />
+<OrganizerDashboard
+  show={showOrganizerDashboard}
+  onClose={() => setShowOrganizerDashboard(false)}
+  event={selectedEvent}
+/>
         <div className="max-w-4xl mx-auto">
         {/* Hero Section - Immersive Poster */}
 <div className="relative h-[450px] md:h-[500px] overflow-hidden">
@@ -7982,6 +8129,20 @@ setLocalLoading(true);
     )}
   </div>
 
+{/* Organizer Dashboard Button */}
+  {user && selectedEvent.organizer_id === user.id && (
+    <button
+      onClick={() => {
+        setShowOrganizerDashboard(true);
+        fetchEventSales(selectedEvent.id);
+      }}
+      className="w-full py-3 mb-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:from-indigo-700 hover:to-purple-700 transition-all shadow-md"
+    >
+      📊 View Sales Dashboard
+    </button>
+  )}
+
+  
   {/* Single Action Button - Type Specific */}
   {rsvpStatus[selectedEvent.id] === 'going' ? (
     <div className="space-y-2">
