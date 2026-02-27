@@ -3261,10 +3261,6 @@ const markAllNotificationsRead = async () => {
   // Social feed functions
   const fetchFeedPosts = async (phase = null) => {
 
-    console.log('🔍 DEBUG - authToken:', authToken);
-    console.log('🔍 authToken type:', typeof authToken);
-    console.log('🔍 authToken truthy?:', !!authToken);
-    console.log('🔍 DEBUG - localStorage:', localStorage.getItem('authToken'));
 
     try {
       setLoadingFeed(true);
@@ -3278,11 +3274,9 @@ const markAllNotificationsRead = async () => {
 
       const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
 
-      console.log('🔍 URL:', url);
-      console.log('🔍 Headers:', headers);
+      
 
       const response = await fetch(url, { headers });
-console.log('🔍 Response status:', response.status);
 if (response.ok) {
         let data = await response.json();
 
@@ -3330,7 +3324,7 @@ const eventDateTime = new Date(`${dateStr}T${event.time}`);
   console.log('🔍 Posts after filter:', data.length);
 }
 
-        console.log('🔍 First post sample:', data[0]);
+       
 setFeedPosts(data);
        if (authToken) {
   // Only fetch reactions for posts we don't have yet
@@ -3798,7 +3792,6 @@ setFeedPosts(data);
   };
 
 const openUserProfile = (userId) => {
-  console.log('🔍 openUserProfile called with:', userId, 'type:', typeof userId, '| my id:', user?.id, 'type:', typeof user?.id);
   if (!userId) return;
   if (user && userId === user.id) {
     setView('profile');
@@ -7063,12 +7056,16 @@ const OrganizerDashboard = ({ show, onClose, event }) => {
       <div key={comment.id}>
         {/* Parent Comment */}
         <div className="flex gap-2">
-          <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">
+         <div
+            onClick={() => openUserProfile(comment.user_id)}
+            className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-indigo-400 transition-all">
             {getInitial(comment.name)}
           </div>
           <div className="flex-1 bg-gray-50 rounded-lg p-2">
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-semibold text-sm text-gray-900">
+             <span
+              onClick={() => openUserProfile(comment.user_id)}
+              className="font-semibold text-sm text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors">
                 {comment.name}
               </span>
               <span className="text-xs text-gray-500">
@@ -7137,14 +7134,18 @@ const OrganizerDashboard = ({ show, onClose, event }) => {
 {/* Replies - FIXED to use reply.name */}
 {comment.replies?.map((reply) => (
   <div key={reply.id} className="ml-10 mt-2 flex gap-2">
-    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">
+   <div
+      onClick={() => openUserProfile(reply.user_id)}
+      className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-indigo-400 transition-all">
       {getInitial(reply.name)}
     </div>
     <div className="flex-1 bg-white rounded-lg p-2 border border-gray-200">
       <div className="flex items-center gap-2 mb-1">
-        <span className="font-semibold text-sm text-gray-900">
-          {reply.name}
-        </span>
+        <span
+            onClick={() => openUserProfile(reply.user_id)}
+            className="font-semibold text-sm text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors">
+              {reply.name}
+            </span>
         <span className="text-xs text-gray-500">
           {new Date(reply.created_at).toLocaleTimeString()}
         </span>
@@ -7168,115 +7169,7 @@ const OrganizerDashboard = ({ show, onClose, event }) => {
     ))}
   </div>
 )}
-{/* Comments List */}
-{feedComments[post.id]?.map((comment) => (
-  <div key={comment.id}>
-    {/* Parent Comment */}
-    <div className="flex gap-2">
-      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">
-        {getInitial(comment.name)}
-      </div>
-      <div className="flex-1 bg-gray-50 rounded-lg p-2">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="font-semibold text-sm text-gray-900">
-            {comment.name}
-          </span>
-          <span className="text-xs text-gray-500">
-            {new Date(comment.created_at).toLocaleTimeString()}
-          </span>
-          {user && user.name === comment.name && (
-            <button
-              onClick={() => handleDeleteFeedComment(comment.id, post.id)}
-              className="text-red-600 hover:text-red-800 text-xs ml-auto"
-            >
-              Delete
-            </button>
-          )}
-        </div>
-        <p className="text-sm text-gray-900">
-          {comment.content}
-        </p>
-        {user && (
-          <button
-            onClick={() => {
-              setReplyingToFeed(comment.id);
-              setReplyText('');
-            }}
-            className="text-xs text-gray-900 hover:text-indigo-700 font-medium mt-1"
-          >
-            Reply
-          </button>
-        )}
-      </div>
-    </div>
 
-    {/* Reply Input - UPDATED TO USE replyText */}
-    {replyingToFeed === comment.id && (
-      <div className="ml-10 mt-2 flex gap-2">
-        <input
-          type="text"
-          value={replyText}
-          onChange={(e) => setReplyText(e.target.value)}
-          onKeyPress={(e) => {
-            if (e.key === "Enter" && replyText.trim()) {
-              handleAddFeedComment(post.id, comment.id);
-            }
-          }}
-          placeholder="Write a reply..."
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-          autoFocus
-        />
-        <button
-          onClick={() => handleAddFeedComment(post.id, comment.id)}
-          disabled={!replyText.trim()}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-        >
-          <Send className="w-4 h-4" />
-          <span className="hidden sm:inline">Reply</span>
-        </button>
-        <button
-          onClick={() => {
-            setReplyingToFeed(null);
-            setReplyText('');
-          }}
-          className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-semibold"
-        >
-          Cancel
-        </button>
-      </div>
-    )}
-
-    {/* Replies - FIXED to use reply.name instead of reply.user_name */}
-    {comment.replies?.map((reply) => (
-      <div key={reply.id} className="ml-10 mt-2 flex gap-2">
-        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">
-          {getInitial(reply.name)}
-        </div>
-        <div className="flex-1 bg-white rounded-lg p-2 border border-gray-200">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-semibold text-sm text-gray-900">
-              {reply.name}
-            </span>
-            <span className="text-xs text-gray-500">
-              {new Date(reply.created_at).toLocaleTimeString()}
-            </span>
-            {user && user.name === reply.name && (
-              <button
-                onClick={() => handleDeleteFeedComment(reply.id, post.id)}
-                className="text-red-600 hover:text-red-800 text-xs ml-auto"
-              >
-                Delete
-              </button>
-            )}
-          </div>
-          <p className="text-sm text-gray-900">
-            {reply.content}
-          </p>
-        </div>
-      </div>
-    ))}
-  </div>
-))}
                             </div>
                         
                         </div>
@@ -11658,9 +11551,7 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                             Message
                           </button>
                           <button
-                            onClick={() =>
-                              showInfoToast("Profile view coming soon!")
-                            }
+                           onClick={() => openUserProfile(buddy.buddy_id)}
                             className="p-2 hover:bg-gray-100 rounded-lg transition-all"
                             title="View Profile"
                           >
@@ -12501,9 +12392,7 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
 
               {/* Clickable avatar and name for profile navigation */}
               <div
-                onClick={() => {
-                  showInfoToast("Profile view coming soon!");
-                }}
+                onClick={() => openUserProfile(selectedConversation.userId)}
                 className="flex items-center gap-3 flex-1 cursor-pointer hover:opacity-80 transition-opacity"
               >
                 <div className="relative">
@@ -13810,14 +13699,18 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                                   {/* Replies */}
 {comment.replies?.map((reply) => (
   <div key={reply.id} className="ml-10 mt-2 flex gap-2">
-    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">
+    <div
+      onClick={() => openUserProfile(reply.user_id)}
+      className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-indigo-400 transition-all">
       {getInitial(reply.name)}
     </div>
     <div className="flex-1 bg-white rounded-lg p-2 border border-gray-200">
       <div className="flex items-center gap-2 mb-1">
-        <span className="font-semibold text-sm text-gray-900">
-          {reply.name}
-        </span>
+       <span
+            onClick={() => openUserProfile(reply.user_id)}
+            className="font-semibold text-sm text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors">
+              {reply.name}
+            </span>
         <span className="text-xs text-gray-500">
           {new Date(reply.created_at).toLocaleTimeString()}
         </span>
