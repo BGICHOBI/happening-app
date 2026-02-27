@@ -1660,7 +1660,9 @@ const fetchUserProfile = async (userId) => {
     const [userRes, eventsRes, postsRes] = await Promise.all([
       fetch(`${API_URL}/api/auth/user/${userId}`),
       fetch(`${API_URL}/api/events?user_id=${userId}`),
-      fetch(`${API_URL}/api/feed-posts?user_id=${userId}`),
+      fetch(`${API_URL}/api/feed-posts?user_id=${userId}`, {
+  headers: { Authorization: `Bearer ${authToken}` }
+}),
     ]);
 
     if (userRes.ok) {
@@ -3280,7 +3282,8 @@ const markAllNotificationsRead = async () => {
       console.log('🔍 Headers:', headers);
 
       const response = await fetch(url, { headers });
-      if (response.ok) {
+console.log('🔍 Response status:', response.status);
+if (response.ok) {
         let data = await response.json();
 
         // Client-side filtering by event phase for accuracy
@@ -3327,7 +3330,8 @@ const eventDateTime = new Date(`${dateStr}T${event.time}`);
   console.log('🔍 Posts after filter:', data.length);
 }
 
-        setFeedPosts(data);
+        console.log('🔍 First post sample:', data[0]);
+setFeedPosts(data);
        if (authToken) {
   // Only fetch reactions for posts we don't have yet
   data.forEach(post => {
@@ -3794,6 +3798,7 @@ const eventDateTime = new Date(`${dateStr}T${event.time}`);
   };
 
 const openUserProfile = (userId) => {
+  console.log('🔍 openUserProfile called with:', userId, 'type:', typeof userId, '| my id:', user?.id, 'type:', typeof user?.id);
   if (!userId) return;
   if (user && userId === user.id) {
     setView('profile');
@@ -6562,12 +6567,10 @@ const OrganizerDashboard = ({ show, onClose, event }) => {
                         {/* Post Header */}
                         <div className="p-4">
                           <div className="flex items-start gap-3">
-                            <div
-                              onClick={() => {
-                                setView("profile");
-                              }}
-                              className="cursor-pointer flex-shrink-0"
-                            >
+                           <div
+  onClick={() => openUserProfile(post.user_id)}
+  className="cursor-pointer flex-shrink-0"
+>
                               {post.user_id === user?.id &&
                                 user?.profile_picture ? (
                                 <img
@@ -6584,12 +6587,10 @@ const OrganizerDashboard = ({ show, onClose, event }) => {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <h3
-                                  onClick={() => {
-                                    setView("profile");
-                                  }}
-                                  className="font-bold text-gray-900 hover:text-indigo-600 transition-colors cursor-pointer"
-                                >
+                               <h3
+  onClick={() => openUserProfile(post.user_id)}
+  className="font-bold text-gray-900 hover:text-indigo-600 transition-colors cursor-pointer"
+>
                                   {post.name}
                                 </h3>
 
