@@ -306,6 +306,11 @@ const [paymentLoading, setPaymentLoading] = useState(false);
 const [paymentSuccess, setPaymentSuccess] = useState(false);
 const [checkoutRequestId, setCheckoutRequestId] = useState('');
 
+const [viewingUser, setViewingUser] = useState(null);
+const [viewingUserEvents, setViewingUserEvents] = useState([]);
+const [viewingUserPosts, setViewingUserPosts] = useState([]);
+const [viewingUserLoading, setViewingUserLoading] = useState(false);
+
   // ADD RECOMMENDATION STATES:
   const [recommendations, setRecommendations] = useState([]);
   const [showRecommendations, setShowRecommendations] = useState(true);
@@ -1647,6 +1652,35 @@ const fetchEventSales = async (event_id) => {
     console.error('Failed to fetch sales:', err);
   }
   setSalesLoading(false);
+};
+
+const fetchUserProfile = async (userId) => {
+  setViewingUserLoading(true);
+  try {
+    const [userRes, eventsRes, postsRes] = await Promise.all([
+      fetch(`${API_URL}/api/auth/user/${userId}`),
+      fetch(`${API_URL}/api/events?user_id=${userId}`),
+      fetch(`${API_URL}/api/feed-posts?user_id=${userId}`),
+    ]);
+
+    if (userRes.ok) {
+      const userData = await userRes.json();
+      setViewingUser(userData);
+    }
+
+    if (eventsRes.ok) {
+      const eventsData = await eventsRes.json();
+      setViewingUserEvents(eventsData.filter(e => e.user_id === userId));
+    }
+
+    if (postsRes.ok) {
+      const postsData = await postsRes.json();
+      setViewingUserPosts(postsData.filter(p => p.user_id === userId));
+    }
+  } catch (err) {
+    console.error('Failed to fetch user profile:', err);
+  }
+  setViewingUserLoading(false);
 };
 
   const fetchEvents = async () => {
@@ -3758,6 +3792,19 @@ const eventDateTime = new Date(`${dateStr}T${event.time}`);
 
     return diffMinutes < 5;
   };
+
+const openUserProfile = (userId) => {
+  if (!userId) return;
+  if (user && userId === user.id) {
+    setView('profile');
+    return;
+  }
+  setViewingUser(null);
+  setViewingUserEvents([]);
+  setViewingUserPosts([]);
+  fetchUserProfile(userId);
+  setView('user-profile');
+};
 
   // ADD THESE HELPER FUNCTIONS HERE:
   const getEventPhase = (event) => {
@@ -7972,7 +8019,15 @@ const OrganizerDashboard = ({ show, onClose, event }) => {
 
       {/* Organizer with Follow - Inline */}
       <div className="flex items-center gap-3 text-white/95">
-        <span className="text-base font-medium">by {selectedEvent.organizer}</span>
+        <span
+  className="text-base font-medium cursor-pointer hover:underline"
+  onClick={(e) => {
+    e.stopPropagation();
+    openUserProfile(selectedEvent.user_id);
+  }}
+>
+  by {selectedEvent.organizer}
+</span>
         {user && selectedEvent.organizer_id && (
           <button
             onClick={(e) => {
@@ -11235,6 +11290,211 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
     );
   }
 
+  if (view === "user-profile") {
+  return (
+    <div className="min-h-screen bg-gray-50 pb-24">
+      <ToastNotification />
+
+      {/* Header */}
+      <header className="bg-white shadow-sm sticky top-0 z-50">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setView("discover")}
+              className="p-2 hover:bg-gray-100 rounded-full transition-all"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <h1 className="text-xl font-bold text-gray-900">Profile</h1>
+          </div>
+        </div>
+      </header>
+
+      {viewingUserLoading ? (
+        <div className="flex justify-center py-20">
+          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      ) : viewingUser ? (
+        <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
+          
+          {/* Profile Card */}
+          <div className="bg-white rounded-2xl shadow-md p-6 text-center">
+            {/* Avatar */}
+            <div className="mb-4">
+              {viewingUser.profile_picture ? (
+                <img
+                  src={viewingUser.profile_picture}
+                  alt={viewingUser.name}
+                  className="w-24 h-24 rounded-full object-cover border-4 border-indigo-100 shadow-lg mx-auto"
+                />
+              ) : (
+                <div className="w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-4xl border-4 border-indigo-100 shadow-lg mx-auto">
+                  {getInitial(viewingUser.name)}
+                </div>
+              )}
+            </div>
+
+            {/* Name & Bio */}
+            <h2 className="text-2xl font-bold text-gray-900 mb-1">{viewingUser.name}</h2>
+            <p className="text-gray-500 text-sm mb-2">@{viewingUser.email?.split('@')[0]}</p>
+            {viewingUser.bio && (
+              <p className="text-gray-700 text-sm max-w-sm mx-auto leading-relaxed mb-4">{viewingUser.bio}</p>
+            )}
+
+            {/* Interests */}
+            {viewingUser.interests?.length > 0 && (
+              <div className="flex flex-wrap gap-2 justify-center mb-4">
+                {viewingUser.interests.map((interest, idx) => (
+                  <span key={idx} className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-semibold">
+                    {interest.icon} {interest.name}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-4 py-4 border-y border-gray-100 mb-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-gray-900">{viewingUserEvents.length}</p>
+                <p className="text-sm text-gray-500">Events</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-gray-900">{viewingUserPosts.length}</p>
+                <p className="text-sm text-gray-500">Posts</p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            {user && user.id !== viewingUser.id && (
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    if (isFollowing[`user-${viewingUser.id}`]) {
+                      handleUnfollow('user', viewingUser.id);
+                    } else {
+                      handleFollow('user', viewingUser.id, viewingUser.name);
+                    }
+                  }}
+                  className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                    isFollowing[`user-${viewingUser.id}`]
+                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                  }`}
+                >
+                  {isFollowing[`user-${viewingUser.id}`] ? '✓ Following' : '+ Follow'}
+                </button>
+                <button
+                  onClick={() => {
+                    const existingBuddy = buddies.find(b => b.buddy_id === viewingUser.id);
+                    if (existingBuddy) {
+                      showInfoToast("You're already buddies!");
+                    } else {
+                      sendBuddyRequest(viewingUser.id);
+                    }
+                  }}
+                  className="flex-1 py-2.5 rounded-xl font-bold text-sm bg-purple-600 text-white hover:bg-purple-700 transition-all"
+                >
+                  👋 Add Buddy
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedConversation({
+                      userId: viewingUser.id,
+                      userName: viewingUser.name,
+                      userProfilePicture: viewingUser.profile_picture,
+                    });
+                    setView('dm-conversation');
+                    fetchDmConversation(viewingUser.id);
+                  }}
+                  className="p-2.5 rounded-xl bg-green-100 text-green-700 hover:bg-green-200 transition-all"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Their Events */}
+          {viewingUserEvents.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-md p-5">
+              <h3 className="font-bold text-gray-900 mb-4">
+                🎉 Events by {viewingUser.name}
+              </h3>
+              <div className="space-y-3">
+                {viewingUserEvents.slice(0, 5).map(event => (
+                  <div
+                    key={event.id}
+                    onClick={() => {
+                      setSelectedEvent(event);
+                      setView('event-detail');
+                    }}
+                    className="flex gap-3 cursor-pointer hover:bg-gray-50 rounded-xl p-2 transition-all"
+                  >
+                    <img
+                      src={event.image}
+                      alt={event.title}
+                      className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">{event.title}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} • {event.location}
+                      </p>
+                      <p className="text-xs text-indigo-600 font-medium mt-0.5">{event.price}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Their Posts */}
+          {viewingUserPosts.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-md p-5">
+              <h3 className="font-bold text-gray-900 mb-4">
+                📸 Posts by {viewingUser.name}
+              </h3>
+              <div className="grid grid-cols-3 gap-2">
+                {viewingUserPosts.slice(0, 9).map(post => (
+                  <div
+                    key={post.id}
+                    onClick={() => setView('discover')}
+                    className="aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer hover:opacity-90 transition-all"
+                  >
+                    {post.media_url || post.image ? (
+                      <img
+                        src={post.media_url || post.image}
+                        alt="Post"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-indigo-50 p-2">
+                        <p className="text-xs text-indigo-600 font-medium text-center line-clamp-3">{post.content}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {viewingUserEvents.length === 0 && viewingUserPosts.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-4xl mb-3">👤</p>
+              <p className="font-bold text-gray-900">No public activity yet</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="text-center py-20">
+          <p className="text-gray-500">User not found</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
   if (view === "buddies") {
     return (
       <div className="min-h-screen bg-gray-50 pb-24">
@@ -13238,6 +13498,7 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                     <div className="p-4">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3 mb-3">
+                         <div onClick={() => openUserProfile(post.user_id)} className="cursor-pointer">
                           {post.user_id === user?.id &&
                             user?.profile_picture ? (
                             <img
@@ -13253,12 +13514,15 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                             />
                           ) : (
                             <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-
                               {getInitial(post.name)}
                             </div>
                           )}
+                          </div>
                           <div>
-                            <div className="font-semibold text-gray-900 text-sm">
+                            <div
+                              className="font-semibold text-gray-900 text-sm cursor-pointer hover:text-indigo-600 transition-colors"
+                              onClick={() => openUserProfile(post.user_id)}
+                            >
                               {post.name || post.user?.name || "Unknown User"}
                             </div>
                             <div className="text-xs text-gray-400">
