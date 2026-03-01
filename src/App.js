@@ -36,7 +36,7 @@ import {
   Star,
   CheckCircle,
 } from "lucide-react";
-
+import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api';
 
 
 // Helper function to get event CTA based on type
@@ -269,6 +269,118 @@ const categories = [
   { id: "sports", name: "Sports", icon: Trophy },
   { id: "arts", name: "Arts", icon: Palette },
 ];
+
+const MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
+console.log('🗺 Maps API Key:', MAPS_API_KEY);
+
+const EventMap = ({ location, eventTitle, latitude, longitude }) => {
+  const [coords, setCoords] = React.useState(null);
+  const [showInfo, setShowInfo] = React.useState(false);
+  const [mapLoading, setMapLoading] = React.useState(true);
+  const [mapError, setMapError] = React.useState(false);
+
+  React.useEffect(() => {
+    if (latitude && longitude) {
+      setCoords({ lat: parseFloat(latitude), lng: parseFloat(longitude) });
+      setMapLoading(false);
+      return;
+    }
+
+    if (!location) {
+      setMapError(true);
+      setMapLoading(false);
+      return;
+    }
+
+   const geocode = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.REACT_APP_API_URL}/api/geocode?address=${encodeURIComponent(location + ', Kenya')}`
+        );
+        const data = await res.json();
+        if (data.status === 'OK' && data.results[0]) {
+          const { lat, lng } = data.results[0].geometry.location;
+          setCoords({ lat, lng });
+        } else {
+          setMapError(true);
+        }
+      } catch (err) {
+        setMapError(true);
+      } finally {
+        setMapLoading(false);
+      }
+    };
+
+    geocode();
+  }, [location, latitude, longitude]);
+
+  const openInGoogleMaps = () => {
+    const query = coords
+      ? `${coords.lat},${coords.lng}`
+      : encodeURIComponent(location + ', Kenya');
+    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
+  };
+
+  if (mapLoading) {
+    return (
+      <div className="w-full h-48 bg-gray-100 rounded-xl flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (mapError || !coords) {
+    return (
+      <div className="w-full h-48 bg-gray-100 rounded-xl flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-500 text-sm mb-2">📍 {location}</p>
+          <button
+            onClick={openInGoogleMaps}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all"
+          >
+            Open in Google Maps
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+      <LoadScript googleMapsApiKey={MAPS_API_KEY}>
+        <GoogleMap
+          mapContainerStyle={{ width: '100%', height: '250px' }}
+          center={coords}
+          zoom={15}
+          options={{
+            disableDefaultUI: true,
+            zoomControl: true,
+          }}
+        >
+          <Marker position={coords} onClick={() => setShowInfo(true)} />
+          {showInfo && (
+            <InfoWindow position={coords} onCloseClick={() => setShowInfo(false)}>
+              <div className="p-1">
+                <p className="font-semibold text-sm text-gray-900">{eventTitle}</p>
+                <p className="text-xs text-gray-600 mt-1">📍 {location}</p>
+              </div>
+            </InfoWindow>
+          )}
+        </GoogleMap>
+      </LoadScript>
+      <button
+        onClick={openInGoogleMaps}
+        className="w-full flex items-center justify-center gap-2 py-3 bg-white hover:bg-gray-50 transition-all border-t border-gray-200 text-sm font-semibold text-indigo-600"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        Open in Google Maps
+      </button>
+    </div>
+  );
+};
 
 function App() {
   const getInitial = (name) => {
@@ -8035,6 +8147,23 @@ const OrganizerDashboard = ({ show, onClose, event }) => {
     </div>
   </div>
 </div>
+
+{/* Map Section */}
+<div className="bg-white rounded-2xl shadow-md p-4">
+  <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+    <MapPin className="w-4 h-4 text-green-600" />
+    Event Location
+  </h3>
+  <EventMap
+    location={selectedEvent.location}
+    eventTitle={selectedEvent.title}
+    latitude={selectedEvent.latitude}
+    longitude={selectedEvent.longitude}
+  />
+</div>
+
+      
+
        {/* RSVP Section - Single Clean Card */}
 {/* Dynamic RSVP Section - Single Action */}
 <div className="bg-white rounded-2xl shadow-md p-5">
