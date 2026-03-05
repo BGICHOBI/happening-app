@@ -1530,18 +1530,19 @@ useEffect(() => {
 }, []);
 
 
-  useEffect(() => {
+ useEffect(() => {
     fetchEvents();
     fetchFeedPosts();
     if (authToken) {
       fetchCurrentUser();
-      fetchConversations(); // Load conversations for badge
-      fetchPendingRequests(); // Load pending requests for badge
+      fetchConversations();
+      fetchPendingRequests();
       fetchNotifications();
-fetchUnreadNotifCount();
+      fetchUnreadNotifCount();
     }
+  }, [authToken]);
 
-    // Detect user city
+  useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(async (position) => {
         try {
@@ -1556,7 +1557,7 @@ fetchUnreadNotifCount();
         }
       });
     }
-  }, [authToken]);
+  }, []);
 
   useEffect(() => {
     if (view === "dm-conversation" && dmMessages.length > 0) {
