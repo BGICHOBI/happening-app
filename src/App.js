@@ -12268,7 +12268,7 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
         </header>
 
         {/* Messages Container */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-1 pb-2">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-6 space-y-1 pb-2">
           {loadingDms ? (
             <div className="text-center py-12">
               <LoadingSpinner size="lg" color="purple" />
@@ -12304,7 +12304,7 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
 
                     {/* Message bubble */}
                     <div
-                      className={`flex gap-2 ${isOwnMessage ? "flex-row-reverse" : ""} ${shouldGroup ? "mt-1" : "mt-3"}`}
+                      className={`flex gap-2 ${isOwnMessage ? "flex-row-reverse" : ""} ${shouldGroup ? "mt-1" : "mt-3"} w-full overflow-hidden`}
                     >
                       {/* Avatar (only show for first message in group) */}
                       {!shouldGroup &&
@@ -12327,8 +12327,8 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                         <div className="w-8 flex-shrink-0"></div>
                       )}
 
-                      <div
-                        className={`flex-1 max-w-[75%] ${isOwnMessage ? "items-end" : "items-start"} flex flex-col`}
+                     <div
+                        className={`min-w-0 max-w-[75%] ${isOwnMessage ? "items-end" : "items-start"} flex flex-col`}
                       >
                         {/* Message bubble */}
                         <div
@@ -12337,7 +12337,7 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                             : "bg-white border border-gray-200 text-gray-900 rounded-bl-sm"
                             } ${shouldGroup ? (isOwnMessage ? "rounded-tr-2xl" : "rounded-tl-2xl") : ""}`}
                         >
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{overflowWrap: 'anywhere', wordBreak: 'break-word'}}>
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap w-full" style={{overflowWrap: 'anywhere', wordBreak: 'break-word', minWidth: 0}}>
                             {msg.message}
                           </p>
                         </div>
