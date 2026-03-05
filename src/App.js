@@ -11198,7 +11198,7 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                   </p>
                 </div>
               </div>
-              
+
             </div>
 
             {/* Tabs */}
@@ -12332,12 +12332,12 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                       >
                         {/* Message bubble */}
                         <div
-                          className={`px-4 py-2 rounded-2xl break-words ${isOwnMessage
+                          className={`px-4 py-2 rounded-2xl ${isOwnMessage
                             ? "bg-indigo-600 text-white rounded-br-sm"
                             : "bg-white border border-gray-200 text-gray-900 rounded-bl-sm"
                             } ${shouldGroup ? (isOwnMessage ? "rounded-tr-2xl" : "rounded-tl-2xl") : ""}`}
                         >
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{overflowWrap: 'anywhere', wordBreak: 'break-word'}}>
                             {msg.message}
                           </p>
                         </div>
@@ -12416,14 +12416,14 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
 
             {/* Input field */}
             <div className="flex-1 bg-gray-100 rounded-2xl px-4 py-2 flex items-center gap-2">
-              <input
-                type="text"
+             <textarea
                 value={newDmMessage}
                 onChange={(e) => {
                   setNewDmMessage(e.target.value);
-              
+                  e.target.style.height = 'auto';
+                  e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
                 }}
-                onKeyPress={(e) => {
+                onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey && newDmMessage.trim()) {
                     e.preventDefault();
                     handleSendDm(
@@ -12433,7 +12433,9 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                   }
                 }}
                 placeholder="Message..."
-                className="flex-1 bg-transparent border-0 focus:outline-none text-gray-900 placeholder-gray-500"
+                rows={1}
+                className="flex-1 bg-transparent border-0 focus:outline-none text-gray-900 placeholder-gray-500 resize-none overflow-hidden"
+                style={{lineHeight: '1.5'}}
               />
 
               {/* Emoji button */}
