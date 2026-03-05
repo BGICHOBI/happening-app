@@ -37,6 +37,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api';
+import EmojiPicker from 'emoji-picker-react';
 
 
 // Helper function to get event CTA based on type
@@ -410,7 +411,10 @@ function App() {
   const [searchByTag, setSearchByTag] = useState(null);
 
   const [userCity, setUserCity] = useState(null);
+
   
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+const emojiPickerRef = useRef(null);
 
 const [showPaymentModal, setShowPaymentModal] = useState(false);
 const [paymentPhone, setPaymentPhone] = useState('');
@@ -1586,7 +1590,15 @@ useEffect(() => {
     }
   };
 
-
+useEffect(() => {
+  const handleClickOutside = (e) => {
+    if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target)) {
+      setShowEmojiPicker(false);
+    }
+  };
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, []);
   
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -12438,27 +12450,40 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                 style={{lineHeight: '1.5'}}
               />
 
-              {/* Emoji button */}
-              <button
-                onClick={() => showInfoToast("Emoji picker coming soon!")}
-                className="text-gray-500 hover:text-gray-700 transition-colors flex-shrink-0"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+            {/* Emoji button + picker */}
+              <div className="relative flex-shrink-0" ref={emojiPickerRef}>
+                <button
+                  onClick={() => setShowEmojiPicker(prev => !prev)}
+                  className="text-gray-500 hover:text-gray-700 transition-colors"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </button>
-            </div>
-
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </button>
+                {showEmojiPicker && (
+                  <div className="absolute bottom-10 right-0 z-50">
+                    <EmojiPicker
+                      onEmojiClick={(emojiData) => {
+                        setNewDmMessage(prev => prev + emojiData.emoji);
+                      
+                      }}
+                      width={300}
+                      height={400}
+                    />
+                  </div>
+                )}
+              </div>
+              </div>
             {/* Send button */}
             <button
               onClick={() =>
