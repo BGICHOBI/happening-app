@@ -8805,10 +8805,22 @@ if (exploreEventType !== 'all') {
   );
 }
 
-// Apply tag filter - NEW
+// Apply tag filter
 if (searchByTag) {
   filteredEvents = filteredEvents.filter((e) => 
     e.tags && e.tags.includes(searchByTag)
+  );
+}
+
+// Apply search query
+if (searchQuery && searchQuery.trim() !== '') {
+  const q = searchQuery.toLowerCase().trim();
+  filteredEvents = filteredEvents.filter((e) =>
+    e.title?.toLowerCase().includes(q) ||
+    e.location?.toLowerCase().includes(q) ||
+    e.organizer?.toLowerCase().includes(q) ||
+    e.description?.toLowerCase().includes(q) ||
+    e.tags?.some(t => t.toLowerCase().includes(q))
   );
 }
 
@@ -8861,548 +8873,153 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
       <div className="min-h-screen bg-gray-50 pb-24">
         <ToastNotification />
         {/* Header - Enhanced with Context */}
-        {/* Header - Enhanced with Context */}
-        <header className="bg-white shadow-sm sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">
+   {/* NEW CLEAN HEADER */}
+        <header className="bg-white sticky top-0 z-50 border-b border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 pt-4 pb-3">
+
+            {/* Top Row: Title + Filter Button */}
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
                   {(() => {
                     const now = new Date();
-                    const dayOfWeek = now.getDay();
+                    const day = now.getDay();
                     const hour = now.getHours();
-                    if (
-                      (dayOfWeek === 5 && hour >= 17) ||
-                      dayOfWeek === 6 ||
-                      dayOfWeek === 0
-                    )
-                      return "🔥";
-                    if (hour >= 17 && hour <= 23) return "🌙";
-                    return "✨";
+                    if ((day === 5 && hour >= 17) || day === 6 || day === 0) return "🔥 This Weekend";
+                    if (hour >= 17 && hour <= 23) return "🌙 Tonight";
+                    return "✨ Discover";
                   })()}
-                </span>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">
-                    {(() => {
-                      const now = new Date();
-                      const dayOfWeek = now.getDay();
-                      const hour = now.getHours();
-                      if (
-                        (dayOfWeek === 5 && hour >= 17) ||
-                        dayOfWeek === 6 ||
-                        dayOfWeek === 0
-                      )
-                        return "Trending this weekend";
-                      if (hour >= 17 && hour <= 23) return "Tonight's picks";
-                      return "Discover events";
-                    })()}
-                  </h1>
-                  <p className="text-sm text-gray-600">
-                    {sortedEvents.length} events {userCity ? `near ${userCity}` : 'in Nairobi'}
-                  </p>
-                </div>
+                </h1>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  {sortedEvents.length} events {userCity ? `near ${userCity}` : 'in Nairobi'}
+                </p>
               </div>
-
-              {/* UPDATED: Added Filter Button */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowFilters(true)}
-                  className="relative px-4 py-2 bg-gray-900 text-white rounded-full font-semibold hover:bg-gray-800 transition-all flex items-center gap-2"
+                  className="relative flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-full text-sm font-semibold hover:bg-gray-700 transition-all"
                 >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-                    />
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h18M7 8h10M11 12h4" />
                   </svg>
-                  <span>Filters</span>
-                  {/* Active filter count badge */}
+                  Filters
                   {(() => {
                     const count =
                       (activeFilters.dateRange !== "all" ? 1 : 0) +
                       (activeFilters.priceRange !== "all" ? 1 : 0) +
                       activeFilters.categories.length +
                       (activeFilters.verified ? 1 : 0) +
-                      (activeFilters.distance !== "all" ? 1 : 0);
+                      (activeFilters.distance !== "all" ? 1 : 0) +
+                      (exploreEventType !== "all" ? 1 : 0);
                     return count > 0 ? (
-                      <span className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                      <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
                         {count}
                       </span>
                     ) : null;
                   })()}
                 </button>
-
                 <button
                   onClick={() => setView("discover")}
                   className="p-2 hover:bg-gray-100 rounded-full transition-all"
                 >
-                  <X className="w-6 h-6 text-gray-600" />
+                  <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
             </div>
 
-{/* Tag Filter Badge - NEW */}
-{searchByTag && (
-  <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full text-sm font-semibold">
-    <span>🏷️ #{searchByTag}</span>
-    <button
-      onClick={() => setSearchByTag(null)}
-      className="hover:bg-indigo-200 rounded-full p-0.5"
-    >
-      <X className="w-3 h-3" />
-    </button>
-  </div>
-)}
-
-            {/* Active Filters Display */}
-            {(() => {
-              const hasActiveFilters =
-                activeFilters.dateRange !== "all" ||
-                activeFilters.priceRange !== "all" ||
-                activeFilters.categories.length > 0 ||
-                activeFilters.verified ||
-                activeFilters.distance !== "all";
-
-              if (!hasActiveFilters) return null;
-
-              const filterLabels = {
-                dateRange: {
-                  today: "Today",
-                  weekend: "This weekend",
-                  week: "This week",
-                  month: "This month",
-                },
-                priceRange: {
-                  free: "Free",
-                  under1000: "Under KES 1,000",
-                  under5000: "Under KES 5,000",
-                  premium: "Premium",
-                },
-                distance: {
-                  nearby: "Nearby",
-                  city: "Within Nairobi",
-                },
-              };
-
-              return (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {activeFilters.dateRange !== "all" && (
-                    <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full text-sm font-semibold">
-                      <span>
-                        📅 {filterLabels.dateRange[activeFilters.dateRange]}
-                      </span>
-                      <button
-                        onClick={() =>
-                          setActiveFilters({
-                            ...activeFilters,
-                            dateRange: "all",
-                          })
-                        }
-                        className="hover:bg-indigo-200 rounded-full p-0.5"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  )}
-
-                  {activeFilters.priceRange !== "all" && (
-                    <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-sm font-semibold">
-                      <span>
-                        💰
-                        {filterLabels.priceRange[activeFilters.priceRange]}
-                      </span>
-                      <button
-                        onClick={() =>
-                          setActiveFilters({
-                            ...activeFilters,
-                            priceRange: "all",
-                          })
-                        }
-                        className="hover:bg-green-200 rounded-full p-0.5"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  )}
-
-                  {activeFilters.categories.map((cat) => (
-                    <div
-                      key={cat}
-                      className="inline-flex items-center gap-2 bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full text-sm font-semibold"
-                    >
-                      <span>
-                        {cat && typeof cat === 'string' && cat.trim() !== ''
-                          ? cat.charAt(0).toUpperCase() + cat.slice(1)
-                          : "?"}
-                      </span>
-                      <button
-                        onClick={() =>
-                          setActiveFilters({
-                            ...activeFilters,
-                            categories: activeFilters.categories.filter(
-                              (c) => c !== cat,
-                            ),
-                          })
-                        }
-                        className="hover:bg-purple-200 rounded-full p-0.5"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-
-                  {activeFilters.verified && (
-                    <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full text-sm font-semibold">
-                      <span>✓ Verified only</span>
-                      <button
-                        onClick={() =>
-                          setActiveFilters({
-                            ...activeFilters,
-                            verified: false,
-                          })
-                        }
-                        className="hover:bg-blue-200 rounded-full p-0.5"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  )}
-
-                  {activeFilters.distance !== "all" && (
-                    <div className="inline-flex items-center gap-2 bg-orange-100 text-orange-700 px-3 py-1.5 rounded-full text-sm font-semibold">
-                      <span>
-                        📍 {filterLabels.distance[activeFilters.distance]}
-                      </span>
-                      <button
-                        onClick={() =>
-                          setActiveFilters({
-                            ...activeFilters,
-                            distance: "all",
-                          })
-                        }
-                        className="hover:bg-orange-200 rounded-full p-0.5"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  )}
-
-                  <button
-                    onClick={() =>
-                      setActiveFilters({
-                        dateRange: "all",
-                        priceRange: "all",
-                        categories: [],
-                        verified: false,
-                        distance: "all",
-                      })
-                    }
-                    className="text-sm text-gray-600 hover:text-gray-900 font-semibold underline"
-                  >
-                    Clear all filters
-                  </button>
-                </div>
-              );
-            })()}
-
-
-            {/* Event Type Filters - NEW */}
-<div className="bg-white border-b py-3">
-  <div className="max-w-7xl mx-auto px-4">
-    <div className="flex items-center gap-2 mb-2">
-      <span className="text-sm font-semibold text-gray-700">Event Type:</span>
-    </div>
-    <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-      <button
-        onClick={() => setExploreEventType('all')}
-        className={`px-4 py-2 rounded-full font-semibold transition-all whitespace-nowrap ${
-          exploreEventType === 'all'
-            ? 'bg-gray-900 text-white'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-        }`}
-      >
-        All Types
-      </button>
-      <button
-        onClick={() => setExploreEventType('open_attendance')}
-        className={`px-4 py-2 rounded-full font-semibold transition-all whitespace-nowrap flex items-center gap-1 ${
-          exploreEventType === 'open_attendance'
-            ? 'bg-green-500 text-white'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-        }`}
-      >
-        <span>🎉</span>
-        <span>Free Events</span>
-      </button>
-      <button
-        onClick={() => setExploreEventType('ticketed')}
-        className={`px-4 py-2 rounded-full font-semibold transition-all whitespace-nowrap flex items-center gap-1 ${
-          exploreEventType === 'ticketed'
-            ? 'bg-purple-500 text-white'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-        }`}
-      >
-        <span>🎟️</span>
-        <span>Ticketed</span>
-      </button>
-      <button
-        onClick={() => setExploreEventType('contribution_based')}
-        className={`px-4 py-2 rounded-full font-semibold transition-all whitespace-nowrap flex items-center gap-1 ${
-          exploreEventType === 'contribution_based'
-            ? 'bg-pink-500 text-white'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-        }`}
-      >
-        <span>💝</span>
-        <span>Fundraisers</span>
-      </button>
-      <button
-        onClick={() => setExploreEventType('online')}
-        className={`px-4 py-2 rounded-full font-semibold transition-all whitespace-nowrap flex items-center gap-1 ${
-          exploreEventType === 'online'
-            ? 'bg-blue-500 text-white'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-        }`}
-      >
-        <span>🌐</span>
-        <span>Online</span>
-      </button>
-      <button
-        onClick={() => setExploreEventType('hybrid')}
-        className={`px-4 py-2 rounded-full font-semibold transition-all whitespace-nowrap flex items-center gap-1 ${
-          exploreEventType === 'hybrid'
-            ? 'bg-indigo-500 text-white'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-        }`}
-      >
-        <span>🔀</span>
-        <span>Hybrid</span>
-      </button>
-      <button
-        onClick={() => setExploreEventType('private_invite')}
-        className={`px-4 py-2 rounded-full font-semibold transition-all whitespace-nowrap flex items-center gap-1 ${
-          exploreEventType === 'private_invite'
-            ? 'bg-gray-600 text-white'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-        }`}
-      >
-        <span>🔒</span>
-        <span>Private</span>
-      </button>
-    </div>
-  </div>
-</div>
-
-            {/* Quick Filter Chips */}
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-              <button
-                onClick={() => {
-                  const today = new Date().toISOString().split("T")[0];
-                  const todayEvents = events.filter((e) => e.date === today);
-                  if (todayEvents.length > 0) {
-                    showSuccessToast(
-                      `Found ${todayEvents.length} events today!`,
-                    );
-                  } else {
-                    showInfoToast("No events today");
-                  }
-                }}
-                className="px-4 py-2 bg-white border-2 border-indigo-200 text-indigo-700 rounded-full font-semibold hover:bg-indigo-50 transition-all whitespace-nowrap flex items-center gap-1"
-              >
-                <Clock className="w-4 h-4" />
-                Today
-              </button>
-
-              <button
-                onClick={() => {
-                  const freeEvents = events.filter(
-                    (e) =>
-                      e.price?.toLowerCase().includes("free") ||
-                      e.price?.toLowerCase() === "0" ||
-                      e.price === "Free",
-                  );
-                  if (freeEvents.length > 0) {
-                    showSuccessToast(`Found ${freeEvents.length} free events!`);
-                  } else {
-                    showInfoToast("No free events available");
-                  }
-                }}
-                className="px-4 py-2 bg-white border-2 border-green-200 text-green-700 rounded-full font-semibold hover:bg-green-50 transition-all whitespace-nowrap"
-              >
-                Free
-              </button>
-
-              <button
-                onClick={() => {
-                  const verifiedEvents = events.filter((e) => e.verified);
-                  if (verifiedEvents.length > 0) {
-                    showSuccessToast(
-                      `Found ${verifiedEvents.length} verified events!`,
-                    );
-                  } else {
-                    showInfoToast("No verified events available");
-                  }
-                }}
-                className="px-4 py-2 bg-white border-2 border-blue-200 text-blue-700 rounded-full font-semibold hover:bg-blue-50 transition-all whitespace-nowrap"
-              >
-                ✓ Verified
-              </button>
-
-              <button
-                onClick={() => {
-                  const weekendEvents = events.filter((e) => {
-                    const eventDay = new Date(e.date).getDay();
-                    return eventDay === 5 || eventDay === 6 || eventDay === 0;
-                  });
-                  if (weekendEvents.length > 0) {
-                    showSuccessToast(
-                      `Found ${weekendEvents.length} weekend events!`,
-                    );
-                  } else {
-                    showInfoToast("No weekend events available");
-                  }
-                }}
-                className="px-4 py-2 bg-white border-2 border-purple-200 text-purple-700 rounded-full font-semibold hover:bg-purple-50 transition-all whitespace-nowrap"
-              >
-                This Weekend
-              </button>
+            {/* Search Bar */}
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search events, venues, artists..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
-          </div>
-        </header>
 
-        {/* Sticky Category Filters */}
-        <div className="bg-white border-b sticky top-[120px] z-40 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 py-3">
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+            {/* Category Pills - Single Row */}
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
               {categories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setExploreCategory(cat.id)}
-                  className={`px-4 py-2 rounded-full font-semibold transition-all whitespace-nowrap flex items-center gap-2 ${exploreCategory === cat.id
-                    ? "bg-gray-900 text-white shadow-md"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
+                  className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all whitespace-nowrap ${
+                    exploreCategory === cat.id
+                      ? "bg-gray-900 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
                 >
-                  <span>{cat.icon}</span>
-                  <span className="text-sm">{cat.name}</span>
+                  {cat.name}
                 </button>
               ))}
             </div>
+
+            {/* Active Filter Tags */}
+            {(searchByTag || activeFilters.dateRange !== "all" || activeFilters.priceRange !== "all" || activeFilters.categories.length > 0 || activeFilters.verified || activeFilters.distance !== "all" || exploreEventType !== "all") && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {searchByTag && (
+                  <span className="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                    🏷️ #{searchByTag}
+                    <button onClick={() => setSearchByTag(null)}><X className="w-3 h-3" /></button>
+                  </span>
+                )}
+                {exploreEventType !== "all" && (
+                  <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                    {exploreEventType}
+                    <button onClick={() => setExploreEventType("all")}><X className="w-3 h-3" /></button>
+                  </span>
+                )}
+                {activeFilters.dateRange !== "all" && (
+                  <span className="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                    📅 {activeFilters.dateRange}
+                    <button onClick={() => setActiveFilters({...activeFilters, dateRange: "all"})}><X className="w-3 h-3" /></button>
+                  </span>
+                )}
+                {activeFilters.priceRange !== "all" && (
+                  <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                    💰 {activeFilters.priceRange}
+                    <button onClick={() => setActiveFilters({...activeFilters, priceRange: "all"})}><X className="w-3 h-3" /></button>
+                  </span>
+                )}
+                {activeFilters.verified && (
+                  <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+                    ✓ Verified
+                    <button onClick={() => setActiveFilters({...activeFilters, verified: false})}><X className="w-3 h-3" /></button>
+                  </span>
+                )}
+                <button
+                  onClick={() => {
+                    setActiveFilters({ dateRange: "all", priceRange: "all", categories: [], verified: false, distance: "all" });
+                    setExploreEventType("all");
+                    setSearchByTag(null);
+                    setSearchQuery("");
+                  }}
+                  className="text-xs text-gray-500 hover:text-gray-700 font-semibold underline"
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
           </div>
-        </div>
+        </header>
 
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex gap-6">
-            {/* Sidebar - Hidden on mobile, visible on tablet+ */}
-            <div className="hidden lg:block w-64 flex-shrink-0">
-              <div className="bg-white rounded-2xl shadow-sm p-4 sticky top-24">
-                <h2 className="font-bold text-gray-900 mb-3">Categories</h2>
-                <div className="space-y-1">
-                  {categories.map((cat) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => setExploreCategory(cat.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${exploreCategory === cat.id
-                        ? "bg-indigo-100 text-indigo-700 font-semibold"
-                        : "text-gray-700 hover:bg-gray-100"
-                        }`}
-                    >
-                      <span className="text-xl">{cat.icon}</span>
-                      <span className="text-sm">{cat.name}</span>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mt-6 pt-6 border-t">
-                  <h3 className="font-bold text-gray-900 mb-3 text-sm">
-                    Sort By
-                  </h3>
-                  <div className="space-y-1">
-                    <button
-                      onClick={() => setExploreSortBy("upcoming")}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${exploreSortBy === "upcoming"
-                        ? "bg-indigo-100 text-indigo-700 font-semibold"
-                        : "text-gray-700 hover:bg-gray-100"
-                        }`}
-                    >
-                      Upcoming
-                    </button>
-                    <button
-                      onClick={() => setExploreSortBy("popular")}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${exploreSortBy === "popular"
-                        ? "bg-indigo-100 text-indigo-700 font-semibold"
-                        : "text-gray-700 hover:bg-gray-100"
-                        }`}
-                    >
-                      Popular
-                    </button>
-                    <button
-                      onClick={() => setExploreSortBy("trending")}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${exploreSortBy === "trending"
-                        ? "bg-indigo-100 text-indigo-700 font-semibold"
-                        : "text-gray-700 hover:bg-gray-100"
-                        }`}
-                    >
-                      Trending
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+          
 
             {/* Events Grid */}
             <div className="flex-1">
-              {/* Mobile Category Filter */}
-              <div className="lg:hidden mb-4">
-                <select
-                  value={exploreCategory}
-                  onChange={(e) => setExploreCategory(e.target.value)}
-                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.icon} {cat.name}
-                    </option>
-                  ))}
-                </select>
-
-                <div className="flex gap-2 mt-3 overflow-x-auto pb-2">
-                  <button
-                    onClick={() => setExploreSortBy("upcoming")}
-                    className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap ${exploreSortBy === "upcoming"
-                      ? "bg-indigo-600 text-white"
-                      : "bg-gray-100 text-gray-700"
-                      }`}
-                  >
-                    Upcoming
-                  </button>
-                  <button
-                    onClick={() => setExploreSortBy("popular")}
-                    className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap ${exploreSortBy === "popular"
-                      ? "bg-indigo-600 text-white"
-                      : "bg-gray-100 text-gray-700"
-                      }`}
-                  >
-                    Popular
-                  </button>
-                  <button
-                    onClick={() => setExploreSortBy("trending")}
-                    className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap ${exploreSortBy === "trending"
-                      ? "bg-indigo-600 text-white"
-                      : "bg-gray-100 text-gray-700"
-                      }`}
-                  >
-                    Trending
-                  </button>
-                </div>
-              </div>
+              
               {/* Events Grid */}
               <div className="flex-1"></div>
               <div className="mb-4">
