@@ -409,6 +409,7 @@ function App() {
   const [eventRSVPs, setEventRSVPs] = useState({}); // Track all RSVPs for events
   const [searchByTag, setSearchByTag] = useState(null);
 
+  const [userCity, setUserCity] = useState(null);
   
 
 const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -1538,6 +1539,22 @@ useEffect(() => {
       fetchPendingRequests(); // Load pending requests for badge
       fetchNotifications();
 fetchUnreadNotifCount();
+    }
+
+    // Detect user city
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const res = await fetch(
+            `${API_URL}/api/geocode/reverse?lat=${latitude}&lng=${longitude}`
+          );
+          const data = await res.json();
+          if (data.city) setUserCity(data.city);
+        } catch (err) {
+          console.error('Location detection failed:', err);
+        }
+      });
     }
   }, [authToken]);
 
@@ -8880,7 +8897,7 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                     })()}
                   </h1>
                   <p className="text-sm text-gray-600">
-                    {sortedEvents.length} events in Nairobi
+                    {sortedEvents.length} events {userCity ? `near ${userCity}` : 'in Nairobi'}
                   </p>
                 </div>
               </div>
