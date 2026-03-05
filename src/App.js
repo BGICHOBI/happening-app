@@ -424,6 +424,10 @@ const [viewingUserEvents, setViewingUserEvents] = useState([]);
 const [viewingUserPosts, setViewingUserPosts] = useState([]);
 const [viewingUserLoading, setViewingUserLoading] = useState(false);
 
+
+const [allUsers, setAllUsers] = useState([]);
+const [buddySearchQuery, setBuddySearchQuery] = useState('');
+
   // ADD RECOMMENDATION STATES:
   const [recommendations, setRecommendations] = useState([]);
   const [showRecommendations, setShowRecommendations] = useState(true);
@@ -1582,6 +1586,8 @@ useEffect(() => {
     }
   };
 
+
+  
   const handleLogin = async (e) => {
     e.preventDefault();
     console.log(API_URL);
@@ -1828,6 +1834,21 @@ const fetchUserProfile = async (userId) => {
       setLoading(false);
     }
   };
+
+const fetchAllUsers = async () => {
+  if (!authToken) return;
+  try {
+    const res = await fetch(`${API_URL}/api/auth/users`, {
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setAllUsers(data);
+    }
+  } catch (err) {
+    console.error('Failed to fetch users:', err);
+  }
+};
 
   const handleImageUpload = async (file) => {
     if (!requireVerification()) return;
@@ -11213,7 +11234,7 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                 )}
               </button>
               <button
-                onClick={() => setBuddiesTab("suggested")}
+                onClick={() => { setBuddiesTab("suggested"); fetchAllUsers(); }}
                 className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${buddiesTab === "suggested"
                   ? "bg-indigo-600 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -11421,85 +11442,125 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
             </div>
           )}
 
-          {/* SUGGESTED BUDDIES TAB */}
+         {/* SUGGESTED BUDDIES TAB */}
           {buddiesTab === "suggested" && (
-            <div className="space-y-3">
-              {suggestedBuddies.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="text-6xl mb-4 opacity-40">✨</div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    No suggestions yet
-                  </h3>
-                  <p className="text-gray-600">
-                    Attend more events to find people you might know!
-                  </p>
-                </div>
-              ) : (
-                suggestedBuddies.map((suggestion) => (
-                  <div
-                    key={suggestion.user_id}
-                    className="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-all"
-                  >
-                    <div className="flex items-center gap-4">
-                      {suggestion.user_profile_picture ? (
-                        <img
-                          src={suggestion.user_profile_picture}
-                          alt={suggestion.user_name}
-                          className="w-14 h-14 rounded-full object-cover border-2 border-purple-200"
-                        />
-                      ) : (
-                        <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                          {getInitial(suggestion.user_name)}
-                        </div>
-                      )}
+            <div className="space-y-4">
 
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-gray-900 truncate">
-                          {suggestion.user_name}
-                        </h3>
-                        {suggestion.reasons &&
-                          suggestion.reasons.length > 0 && (
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search people..."
+                  value={buddySearchQuery}
+                  onChange={(e) => setBuddySearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              {/* Browse All Users */}
+              {(() => {
+                const buddyIds = new Set(buddies.map(b => b.buddy_id));
+                const pendingIds = new Set(pendingRequests.map(r => r.sender_id));
+                const filtered = allUsers.filter(u =>
+                  !buddyIds.has(u.id) &&
+                  (buddySearchQuery === '' ||
+                    u.name?.toLowerCase().includes(buddySearchQuery.toLowerCase()) ||
+                    u.location?.toLowerCase().includes(buddySearchQuery.toLowerCase()))
+                );
+
+                if (filtered.length === 0 && buddySearchQuery) {
+                  return (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">No users found for "{buddySearchQuery}"</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-3">
+                    {filtered.length > 0 && (
+                      <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">
+                        {buddySearchQuery ? `${filtered.length} results` : 'People on Happening'}
+                      </p>
+                    )}
+                    {filtered.map((u) => (
+                      <div key={u.id} className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-3">
+                        {/* Avatar */}
+                        <button onClick={() => openUserProfile(u.id)} className="flex-shrink-0">
+                          {u.profile_picture ? (
+                            <img src={u.profile_picture} alt={u.name} className="w-12 h-12 rounded-full object-cover border-2 border-purple-100" />
+                          ) : (
+                            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                              {getInitial(u.name)}
+                            </div>
+                          )}
+                        </button>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <button onClick={() => openUserProfile(u.id)} className="text-left">
+                            <p className="font-bold text-gray-900 truncate">{u.name}</p>
+                            <p className="text-xs text-gray-500 truncate">@{u.email?.split('@')[0]}{u.location ? ` · ${u.location}` : ''}</p>
+                          </button>
+                          {u.bio && <p className="text-xs text-gray-400 truncate mt-0.5">{u.bio}</p>}
+                        </div>
+
+                        {/* Add Button */}
+                        <button
+                          onClick={() => sendBuddyRequest(u.id, u.name)}
+                          className="flex-shrink-0 px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition-all flex items-center gap-1"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />
+                          Add
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {/* Smart Suggestions */}
+              {suggestedBuddies.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">Suggested for you</p>
+                  {suggestedBuddies.map((suggestion) => (
+                    <div key={suggestion.user_id} className="bg-white rounded-xl shadow-sm p-4 hover:shadow-md transition-all">
+                      <div className="flex items-center gap-4">
+                        {suggestion.user_profile_picture ? (
+                          <img src={suggestion.user_profile_picture} alt={suggestion.user_name} className="w-12 h-12 rounded-full object-cover border-2 border-purple-200" />
+                        ) : (
+                          <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                            {getInitial(suggestion.user_name)}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-gray-900 truncate">{suggestion.user_name}</h3>
+                          {suggestion.reasons?.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {suggestion.reasons.map((reason, idx) => (
-                                <span
-                                  key={idx}
-                                  className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium"
-                                >
-                                  {reason}
-                                </span>
+                                <span key={idx} className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">{reason}</span>
                               ))}
                             </div>
                           )}
-                        {suggestion.mutualBuddies > 0 && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            {suggestion.mutualBuddies} mutual{" "}
-                            {suggestion.mutualBuddies === 1
-                              ? "buddy"
-                              : "buddies"}
-                          </p>
-                        )}
+                          {suggestion.mutualBuddies > 0 && (
+                            <p className="text-xs text-gray-500 mt-1">{suggestion.mutualBuddies} mutual {suggestion.mutualBuddies === 1 ? 'buddy' : 'buddies'}</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => {
+                            sendBuddyRequest(suggestion.user_id, suggestion.user_name);
+                            setSuggestedBuddies(suggestedBuddies.filter(s => s.user_id !== suggestion.user_id));
+                          }}
+                          className="px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-xs font-bold hover:shadow-lg transition-all flex items-center gap-1"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />
+                          Add
+                        </button>
                       </div>
-
-                      <button
-                        onClick={() => {
-                          sendBuddyRequest(
-                            suggestion.user_id,
-                            suggestion.user_name,
-                          );
-                          setSuggestedBuddies(
-                            suggestedBuddies.filter(
-                              (s) => s.user_id !== suggestion.user_id,
-                            ),
-                          );
-                        }}
-                        className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-sm font-semibold hover:shadow-lg transition-all flex items-center gap-2"
-                      >
-                        <UserPlus className="w-4 h-4" />
-                        Add
-                      </button>
                     </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
           )}
