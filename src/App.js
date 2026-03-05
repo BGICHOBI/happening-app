@@ -11198,14 +11198,7 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                   </p>
                 </div>
               </div>
-
-              {/* Search buddies */}
-              <button
-                onClick={() => showInfoToast("Search coming soon!")}
-                className="p-2 hover:bg-gray-100 rounded-full transition-all"
-              >
-                <Search className="w-5 h-5 text-gray-600" />
-              </button>
+              
             </div>
 
             {/* Tabs */}
