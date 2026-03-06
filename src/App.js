@@ -160,7 +160,7 @@ const EventTypeBadge = ({ eventType }) => {
 
 
 /// Upgraded Comment Input Component
-const CommentInput = React.memo(({ postId, onSubmit, authToken, API_URL, showInfoToast, showSuccessToast, showErrorToast, user, getInitial, placeholder = "Add a comment...", parentCommentId = null, onCancel = null, requireVerification, initialValue = '' }) => {
+const CommentInput = React.memo(({ postId, onSubmit, authToken, API_URL, showInfoToast, showSuccessToast, showErrorToast, user, getInitial, placeholder = "Add a comment...", parentCommentId = null, onCancel = null, requireVerification, initialValue = '', endpoint = 'feed-comments' }) => {
   const [inputValue, setInputValue] = useState(initialValue || '');
 const [isFocused, setIsFocused] = useState(false);
 const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -190,7 +190,7 @@ useEffect(() => {
     if (!inputValue.trim()) return;
 
     try {
-      const response = await fetch(`${API_URL}/api/feed-comments`, {
+      const response = await fetch(`${API_URL}/api/${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2459,9 +2459,11 @@ if (event && event.organizer_id && event.organizer_id !== user.id) {
     }
   };
 
-  const fetchPostComments = async (postId) => {
+ const fetchPostComments = async (postId) => {
     try {
-      const response = await fetch(`${API_URL}/api/comments/post/${postId}`);
+      const response = await fetch(`${API_URL}/api/post-comments/${postId}`, {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
       if (response.ok) {
         const data = await response.json();
         setPostComments((prev) => ({ ...prev, [postId]: data }));
@@ -2482,7 +2484,7 @@ if (event && event.organizer_id && event.organizer_id !== user.id) {
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/comments/${commentId}`, {
+      const response = await fetch(`${API_URL}/api/post-comments/${commentId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${authToken}`,
@@ -7327,6 +7329,7 @@ const OrganizerDashboard = ({ show, onClose, event }) => {
   <div className="mt-2">
     <CommentInput
       postId={post.id}
+      endpoint="post-comments"
       parentCommentId={comment.id}
       placeholder={`Reply to ${comment.name}...`}
       initialValue={replyingToReplyName ? `@${replyingToReplyName} ` : ''}
@@ -7414,6 +7417,7 @@ const OrganizerDashboard = ({ show, onClose, event }) => {
       <div className="px-4 pb-4 pt-2 border-t border-gray-50">
         <CommentInput
           postId={post.id}
+          endpoint="post-comments"
           onSubmit={(postId) => {
             fetchFeedComments(postId);
             setFeedPosts(prevPosts =>
@@ -13515,177 +13519,227 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                       )}
                     </div>
 
-                    {/* Comments Section */}
-                    {showComments[post.id] && (
-                      <div className="border-t border-gray-100 px-4 py-3">
-                        {/* Add Comment Input */}
-                        {user && (
-                          <div className="flex gap-2 mb-4">
-                            {user?.profile_picture ? (
-                              <img
-                                src={user.profile_picture}
-                                alt={user.name}
-                                className="w-8 h-8 rounded-full object-cover border-2 border-indigo-200 flex-shrink-0"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    {/* Upgraded Comments Section - Event Feed */}
+{showComments[post.id] && (
+  <div className="border-t border-gray-100">
+    {/* Sort bar */}
+    <div className="flex items-center justify-between px-4 pt-3 pb-1">
+      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+        {post.comment_count > 0 ? `${post.comment_count} Comment${post.comment_count !== 1 ? 's' : ''}` : 'Comments'}
+      </span>
+      {postComments[post.id]?.length > 1 && (
+        <div className="flex gap-1 bg-gray-100 rounded-full p-0.5">
+          {['Top', 'Newest'].map((sort) => (
+            <button
+              key={sort}
+              onClick={() => {
+                const sorted = [...(postComments[post.id] || [])];
+                if (sort === 'Top') {
+                  sorted.sort((a, b) => (b.replies?.length || 0) - (a.replies?.length || 0));
+                } else {
+                  sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                }
+                setPostComments(prev => ({ ...prev, [post.id]: sorted }));
+              }}
+              className="text-xs px-3 py-1 rounded-full font-medium transition-all text-gray-500 hover:text-gray-900 hover:bg-white"
+            >
+              {sort}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
 
-                                {getInitial(user.name)}
-                              </div>
-                            )}
-                            <input
-                              type="text"
-                              placeholder="Add a comment..."
-                              className="flex-1 px-3 py-2 bg-gray-50 border-0 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                              onKeyPress={(e) => {
-                                if (
-                                  e.key === "Enter" &&
-                                  e.target.value.trim()
-                                ) {
-                                  handleAddComment(post.id, e.target.value);
-                                  e.target.value = "";
-                                }
-                              }}
-                            />
+    {/* Empty state */}
+    {(!postComments[post.id] || postComments[post.id].length === 0) && (
+      <div className="px-4 py-6 text-center">
+        <div className="text-3xl mb-2">💬</div>
+        <p className="text-sm font-semibold text-gray-700 mb-1">No comments yet</p>
+        <p className="text-xs text-gray-400 mb-3">Be the first to start the conversation!</p>
+        <div className="flex flex-wrap gap-2 justify-center">
+          {["Who's coming? 🙋", "Any dress code? 👔", "Anyone from Nairobi? 📍"].map((prompt) => (
+            <span key={prompt} className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-full font-medium">
+              {prompt}
+            </span>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {/* Comments list */}
+    <div className="px-4 pb-2 space-y-4 max-h-96 overflow-y-auto">
+      {postComments[post.id]?.map((comment) => {
+        const isOrganizer = comment.user_id === selectedEvent?.organizer_id;
+        const isPinned = comment.is_pinned;
+
+        return (
+          <div key={comment.id}>
+            {isPinned && (
+              <div className="flex items-center gap-1 text-xs text-amber-600 font-semibold mb-1 ml-10">
+                📌 Pinned by organizer
+              </div>
+            )}
+
+            <div className="flex gap-2.5">
+              <div
+                onClick={() => openUserProfile(comment.user_id)}
+                className="w-8 h-8 rounded-full flex-shrink-0 cursor-pointer overflow-hidden border-2 border-gray-100 hover:border-indigo-300 transition-all"
+              >
+                {comment.profile_picture ? (
+                  <img src={comment.profile_picture} alt={comment.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-xs">
+                    {getInitial(comment.name)}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className={`rounded-2xl rounded-tl-sm px-3 py-2 inline-block max-w-full ${isPinned ? 'bg-amber-50 border border-amber-200' : 'bg-gray-100'}`}>
+                  <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                    <span
+                      onClick={() => openUserProfile(comment.user_id)}
+                      className="font-bold text-sm text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors"
+                    >
+                      {comment.name}
+                    </span>
+                    {isOrganizer && (
+                      <span className="text-xs bg-indigo-600 text-white px-1.5 py-0.5 rounded-full font-semibold">
+                        ⭐ Organizer
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-800 leading-relaxed break-words" style={{overflowWrap: 'anywhere', wordBreak: 'break-word'}}>{comment.content}</p>
+                </div>
+
+                <div className="flex items-center gap-3 mt-1 ml-1">
+                  <span className="text-xs text-gray-400">
+                    {new Date(comment.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  {user && (
+                    <button
+                      onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                      className="text-xs text-gray-500 hover:text-indigo-600 font-semibold transition-colors"
+                    >
+                      Reply
+                    </button>
+                  )}
+                  {user && user.name === comment.name && (
+                    <button
+                      onClick={() => handleDeleteComment(comment.id, post.id)}
+                      className="text-xs text-gray-400 hover:text-red-500 font-semibold transition-colors ml-auto"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+
+                {/* Reply input */}
+                {replyingTo === comment.id && (
+                  <div className="mt-2">
+                    <CommentInput
+                      postId={post.id}
+                      endpoint="post-comments"
+                      parentCommentId={comment.id}
+                      placeholder={`Reply to ${comment.name}...`}
+                      onSubmit={(postId) => {
+                        fetchPostComments(postId);
+                      }}
+                      onCancel={() => setReplyingTo(null)}
+                      authToken={authToken}
+                      API_URL={API_URL}
+                      showInfoToast={showInfoToast}
+                      showSuccessToast={showSuccessToast}
+                      showErrorToast={showErrorToast}
+                      user={user}
+                      getInitial={getInitial}
+                      requireVerification={requireVerification}
+                    />
+                  </div>
+                )}
+
+                {/* Replies */}
+                {comment.replies?.length > 0 && (
+                  <div className="mt-2 space-y-2 border-l-2 border-indigo-100 pl-3 ml-1">
+                    {comment.replies.map((reply) => (
+                      <div key={reply.id} className="flex gap-2">
+                        <div
+                          onClick={() => openUserProfile(reply.user_id)}
+                          className="w-6 h-6 rounded-full flex-shrink-0 cursor-pointer overflow-hidden border border-gray-200 hover:border-indigo-300 transition-all"
+                        >
+                          {reply.profile_picture ? (
+                            <img src={reply.profile_picture} alt={reply.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-blue-400 to-teal-500 flex items-center justify-center text-white font-bold text-xs">
+                              {getInitial(reply.name)}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-3 py-2 inline-block max-w-full">
+                            <span
+                              onClick={() => openUserProfile(reply.user_id)}
+                              className="font-bold text-xs text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors"
+                            >
+                              {reply.name}
+                            </span>
+                            <p className="text-xs text-gray-800 mt-0.5 leading-relaxed break-words" style={{overflowWrap: 'anywhere', wordBreak: 'break-word'}}>{reply.content}</p>
                           </div>
-                        )}
+                          <div className="flex items-center gap-3 mt-0.5 ml-1">
+                            <span className="text-xs text-gray-400">
+                              {new Date(reply.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            {user && (
+                              <button
+                                onClick={() => setReplyingTo(comment.id)}
+                                className="text-xs text-gray-500 hover:text-indigo-600 font-semibold transition-colors"
+                              >
+                                Reply
+                              </button>
+                            )}
+                            {user && user.name === reply.name && (
+                              <button
+                                onClick={() => handleDeleteComment(reply.id, post.id)}
+                                className="text-xs text-gray-400 hover:text-red-500 font-semibold transition-colors"
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
 
-                        {/* Display Comments */}
-                        {postComments[post.id]?.length === 0 ? (
-                          <p className="text-center text-gray-400 text-sm py-4">
-                            No comments yet. Be the first!
-                          </p>
-                        ) : (
-                          <div className="space-y-3 max-h-80 overflow-y-auto">
-                            {postComments[post.id]?.map((comment) => (
-                              <div key={comment.id} className="flex gap-2">
-                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-teal-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-
-                                  {getInitial(comment.name)}
-                                </div>
-                                <div className="flex-1">
-                                  <div className="bg-gray-50 rounded-2xl px-3 py-2">
-                                    <div className="font-semibold text-sm text-gray-900">
-                                      {comment.name}
-                                    </div>
-                                    <p className="text-sm text-gray-700">
-                                      {comment.content}
-                                    </p>
-                                  </div>
-                                  <div className="flex items-center gap-4 mt-1 px-3">
-                                    <span className="text-xs text-gray-400">
-                                      {new Date(
-                                        comment.created_at,
-                                      ).toLocaleDateString("en-US", {
-                                        month: "short",
-                                        day: "numeric",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })}
-                                    </span>
-                                    <button
-                                      onClick={() =>
-                                        setReplyingTo(
-                                          replyingTo === comment.id
-                                            ? null
-                                            : comment.id,
-                                        )
-                                      }
-                                      className="text-xs text-gray-500 hover:text-indigo-600 font-semibold"
-                                    >
-                                      Reply
-                                    </button>
-                                    {user &&
-                                      user.name === comment.name && (
-                                        <button
-                                          onClick={() =>
-                                            handleDeleteComment(
-                                              comment.id,
-                                              post.id,
-                                            )
-                                          }
-                                          className="text-xs text-gray-500 hover:text-red-600 font-semibold"
-                                        >
-                                          Delete
-                                        </button>
-                                      )}
-                                  </div>
-
-                                  {/* Reply Input */}
-                                 {replyingToFeed === comment.id && (
-  <div className="ml-10 mt-2 flex gap-2">
-    <input
-      type="text"
-      value={replyText}
-      onChange={(e) => setReplyText(e.target.value)}
-      onKeyPress={(e) => {
-        if (e.key === "Enter" && replyText.trim()) {
-          handleAddFeedComment(post.id, comment.id);
-        }
-      }}
-      placeholder="Write a reply..."
-      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-      autoFocus
-    />
-    <button
-      onClick={() => handleAddFeedComment(post.id, comment.id)}
-      disabled={!replyText.trim()}
-      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-    >
-      <Send className="w-4 h-4" />
-      <span className="hidden sm:inline">Reply</span>
-    </button>
-    <button
-      onClick={() => {
-        setReplyingToFeed(null);
-        setReplyText('');
-      }}
-      className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-semibold"
-    >
-      Cancel
-    </button>
+    {/* Comment input at bottom */}
+    {user && (
+      <div className="px-4 pb-4 pt-2 border-t border-gray-50">
+        <CommentInput
+          postId={post.id}
+          endpoint="post-comments"
+          onSubmit={(postId) => {
+            fetchPostComments(postId);
+          }}
+          authToken={authToken}
+          API_URL={API_URL}
+          showInfoToast={showInfoToast}
+          showSuccessToast={showSuccessToast}
+          showErrorToast={showErrorToast}
+          user={user}
+          getInitial={getInitial}
+          requireVerification={requireVerification}
+        />
+      </div>
+    )}
   </div>
 )}
-                                  {/* Replies */}
-{comment.replies?.map((reply) => (
-  <div key={reply.id} className="ml-10 mt-2 flex gap-2">
-    <div
-      onClick={() => openUserProfile(reply.user_id)}
-      className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-indigo-400 transition-all">
-      {getInitial(reply.name)}
-    </div>
-    <div className="flex-1 bg-white rounded-lg p-2 border border-gray-200">
-      <div className="flex items-center gap-2 mb-1">
-       <span
-            onClick={() => openUserProfile(reply.user_id)}
-            className="font-semibold text-sm text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors">
-              {reply.name}
-            </span>
-        <span className="text-xs text-gray-500">
-          {new Date(reply.created_at).toLocaleTimeString()}
-        </span>
-        {user && user.name === reply.name && (
-          <button
-            onClick={() => handleDeleteFeedComment(reply.id, post.id)}
-            className="text-red-600 hover:text-red-800 text-xs ml-auto"
-          >
-            Delete
-          </button>
-        )}
-      </div>
-      <p className="text-sm text-gray-900">
-        {reply.content}
-      </p>
-    </div>
-  </div>
-))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 );
               })}
