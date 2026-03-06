@@ -7163,9 +7163,9 @@ const OrganizerDashboard = ({ show, onClose, event }) => {
   <div className="border-t border-gray-100">
     {/* Sort bar */}
     <div className="flex items-center justify-between px-4 pt-3 pb-1">
-      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-        {feedComments[post.id]?.length > 0 ? `${feedComments[post.id].length} Comment${feedComments[post.id].length !== 1 ? 's' : ''}` : 'Comments'}
-      </span>
+     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+  {post.comment_count > 0 ? `${post.comment_count} Comment${post.comment_count !== 1 ? 's' : ''}` : 'Comments'}
+</span>
       {feedComments[post.id]?.length > 1 && (
         <div className="flex gap-1 bg-gray-100 rounded-full p-0.5">
           {['Top', 'Newest'].map((sort) => (
