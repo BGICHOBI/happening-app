@@ -2399,14 +2399,14 @@ if (event && event.organizer_id && event.organizer_id !== user.id) {
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/reactions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({ postId, reaction }),
-      });
+     const response = await fetch(`${API_URL}/api/feed-reactions`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${authToken}`,
+  },
+  body: JSON.stringify({ post_id: postId, reaction_type: reaction }),
+});
 
       if (response.ok) {
         fetchPostReactions(postId);
@@ -2418,11 +2418,14 @@ if (event && event.organizer_id && event.organizer_id !== user.id) {
 
   const fetchPostReactions = async (postId) => {
     try {
-      const response = await fetch(`${API_URL}/api/reactions/post/${postId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setPostReactions((prev) => ({ ...prev, [postId]: data }));
-      }
+     const response = await fetch(`${API_URL}/api/feed-reactions/${postId}`, {
+  headers: { Authorization: `Bearer ${authToken}` }
+});
+if (response.ok) {
+  const data = await response.json();
+  // feed-reactions returns {total, reactions, all} - extract reactions grouped by type
+  setPostReactions((prev) => ({ ...prev, [postId]: data.reactions || data }));
+}
     } catch (error) {
       console.error("Error fetching reactions:", error);
     }
