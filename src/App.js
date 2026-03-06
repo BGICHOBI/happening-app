@@ -159,35 +159,41 @@ const EventTypeBadge = ({ eventType }) => {
 
 
 
-// Isolated Comment Input Component
-const CommentInput = React.memo(({ postId, onSubmit, authToken, API_URL, showInfoToast, showSuccessToast, showErrorToast }) => {
+/// Upgraded Comment Input Component
+const CommentInput = React.memo(({ postId, onSubmit, authToken, API_URL, showInfoToast, showSuccessToast, showErrorToast, user, getInitial, placeholder = "Add a comment...", parentCommentId = null, onCancel = null, requireVerification }) => {
   const [inputValue, setInputValue] = useState('');
-  
+  const [isFocused, setIsFocused] = useState(false);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (parentCommentId && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [parentCommentId]);
+
   const handleSubmit = async () => {
     if (!requireVerification()) return;
     if (!inputValue.trim()) return;
-    
+
     try {
-      const response = await fetch(
-        `${API_URL}/api/feed-comments`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: JSON.stringify({
-            post_id: postId,
-            content: inputValue.trim(),
-            parent_comment_id: null,
-          }),
+      const response = await fetch(`${API_URL}/api/feed-comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
         },
-      );
+        body: JSON.stringify({
+          post_id: postId,
+          content: inputValue.trim(),
+          parent_comment_id: parentCommentId,
+        }),
+      });
 
       if (response.ok) {
         setInputValue('');
         onSubmit(postId);
-        showSuccessToast("Comment added!");
+        if (onCancel) onCancel();
+        showSuccessToast(parentCommentId ? "Reply added!" : "Comment added!");
       }
     } catch (error) {
       console.error("Error adding comment:", error);
@@ -196,27 +202,47 @@ const CommentInput = React.memo(({ postId, onSubmit, authToken, API_URL, showInf
   };
 
   return (
-    <div className="flex gap-2">
-      <input
-        type="text"
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        onKeyPress={(e) => {
-          if (e.key === "Enter" && inputValue.trim()) {
-            handleSubmit();
-          }
-        }}
-        placeholder="Write a comment..."
-        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-      />
-      <button
-        onClick={handleSubmit}
-        disabled={!inputValue.trim()}
-        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-      >
-        <Send className="w-4 h-4" />
-        <span className="hidden sm:inline">Send</span>
-      </button>
+    <div className="flex items-end gap-2">
+      {/* Avatar */}
+      {user?.profile_picture ? (
+        <img src={user.profile_picture} alt={user.name}
+          className="w-8 h-8 rounded-full object-cover flex-shrink-0 border-2 border-indigo-100" />
+      ) : (
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+          {getInitial(user?.name)}
+        </div>
+      )}
+
+      {/* Input area */}
+      <div className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-2xl border transition-all ${isFocused ? 'border-indigo-400 bg-white shadow-sm' : 'border-gray-200 bg-gray-50'}`}>
+        <input
+          ref={inputRef}
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          onKeyPress={(e) => {
+            if (e.key === "Enter" && inputValue.trim()) handleSubmit();
+          }}
+          placeholder={placeholder}
+          className="flex-1 bg-transparent border-0 focus:outline-none text-sm text-gray-900 placeholder-gray-400"
+        />
+        {inputValue.trim() && (
+          <button onClick={handleSubmit}
+            className="p-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full transition-all flex-shrink-0">
+            <Send className="w-3 h-3" />
+          </button>
+        )}
+      </div>
+
+      {/* Cancel button for replies */}
+      {onCancel && (
+        <button onClick={onCancel}
+          className="text-xs text-gray-500 hover:text-gray-700 font-medium pb-2">
+          Cancel
+        </button>
+      )}
     </div>
   );
 });
@@ -7059,25 +7085,8 @@ const OrganizerDashboard = ({ show, onClose, event }) => {
                                       </div>
                                     )}
 
-                                    {totalComments > 0 && (
-                                      <button
-                                        onClick={() => {
-                                          setShowFeedComments({
-                                            ...showFeedComments,
-                                            [post.id]: !showFeedComments[post.id],
-                                          });
-                                          if (!feedComments[post.id]) {
-                                            fetchFeedComments(post.id);
-                                          }
-                                        }}
-                                        className="text-gray-600 hover:text-gray-900 font-medium"
-                                      >
-                                        {totalComments}{" "}
-                                        {totalComments === 1
-                                          ? "comment"
-                                          : "comments"}
-                                      </button>
-                                    )}
+                                    
+                                   
                                   </div>
                                 )}
 
@@ -7143,193 +7152,239 @@ const OrganizerDashboard = ({ show, onClose, event }) => {
 </div>
                                 
 
-                                {/* Comment Preview (before full comments section) */}
-                                {!showFeedComments[post.id] &&
-                                  feedComments[post.id]?.length > 0 && (
-                                    <div className="mt-3 px-3 py-2 bg-gray-50 rounded-lg">
-                                      <div className="flex items-start gap-2">
-                                        <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-xs flex-shrink-0">
-                                          {getInitial(feedComments[post.id]?.[0]?.user_name)}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                          <p className="text-sm text-gray-900">
-                                            <span className="font-semibold">
-                                              {feedComments[post.id][0].user_name}
-                                            </span>{" "}
-                                            <span className="text-gray-700 line-clamp-1">
-                                              {feedComments[post.id][0].content}
-                                            </span>
-                                          </p>
-                                          {feedComments[post.id].length > 1 && (
-                                            <button
-                                              onClick={() => {
-                                                setShowFeedComments({
-                                                  ...showFeedComments,
-                                                  [post.id]: true,
-                                                });
-                                              }}
-                                              className="text-xs text-gray-600 hover:text-gray-900 font-medium mt-1"
-                                            >
-                                              View{" "}
-                                              {feedComments[post.id].length > 2
-                                                ? `all ${feedComments[post.id].length}`
-                                                : "1 more"}{" "}
-                                              comment
-                                              {feedComments[post.id].length > 2
-                                                ? "s"
-                                                : ""}
-                                            </button>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
+                              
                               </>
                             );
                           })()}
 
                          
-                            {/* Comments Section */}
+                           {/* Upgraded Comments Section */}
 {showFeedComments[post.id] && (
-  <div className="mt-3 border-t pt-3 space-y-3">
- {/* Add Comment Input - WITH SEND BUTTON */}
-{user && (
-  <CommentInput
-    postId={post.id}
-    onSubmit={(postId) => {
-      fetchFeedComments(postId);
-      setFeedPosts(prevPosts => 
-        prevPosts.map(p => 
-          p.id === postId 
-            ? { ...p, comment_count: (p.comment_count || 0) + 1 }
-            : p
-        )
-      );
-    }}
-    authToken={authToken}
-    API_URL={API_URL}
-    showInfoToast={showInfoToast}
-    showSuccessToast={showSuccessToast}
-    showErrorToast={showErrorToast}
-  />
-)}
-
-    {/* Comments List */}
-    {feedComments[post.id]?.map((comment) => (
-      <div key={comment.id}>
-        {/* Parent Comment */}
-        <div className="flex gap-2">
-         <div
-            onClick={() => openUserProfile(comment.user_id)}
-            className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-indigo-400 transition-all">
-            {getInitial(comment.name)}
-          </div>
-          <div className="flex-1 bg-gray-50 rounded-lg p-2">
-            <div className="flex items-center gap-2 mb-1">
-             <span
-              onClick={() => openUserProfile(comment.user_id)}
-              className="font-semibold text-sm text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors">
-                {comment.name}
-              </span>
-              <span className="text-xs text-gray-500">
-                {new Date(comment.created_at).toLocaleTimeString()}
-              </span>
-              {user && user.name === comment.name && (
-                <button
-                  onClick={() => handleDeleteFeedComment(comment.id, post.id)}
-                  className="text-red-600 hover:text-red-800 text-xs ml-auto"
-                >
-                  Delete
-                </button>
-              )}
-            </div>
-            <p className="text-sm text-gray-900">
-              {comment.content}
-            </p>
-            {user && (
-              <button
-                onClick={() => setReplyingToFeed(comment.id)}
-                className="text-xs text-gray-900 hover:text-indigo-700 font-medium mt-1"
-              >
-                Reply
-              </button>
-            )}
-          </div>
+  <div className="border-t border-gray-100">
+    {/* Sort bar */}
+    <div className="flex items-center justify-between px-4 pt-3 pb-1">
+      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+        {feedComments[post.id]?.length > 0 ? `${feedComments[post.id].length} Comment${feedComments[post.id].length !== 1 ? 's' : ''}` : 'Comments'}
+      </span>
+      {feedComments[post.id]?.length > 1 && (
+        <div className="flex gap-1 bg-gray-100 rounded-full p-0.5">
+          {['Top', 'Newest'].map((sort) => (
+            <button
+              key={sort}
+              onClick={() => {
+                const sorted = [...(feedComments[post.id] || [])];
+                if (sort === 'Top') {
+                  sorted.sort((a, b) => (b.replies?.length || 0) - (a.replies?.length || 0));
+                } else {
+                  sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                }
+                setFeedComments(prev => ({ ...prev, [post.id]: sorted }));
+              }}
+              className="text-xs px-3 py-1 rounded-full font-medium transition-all text-gray-500 hover:text-gray-900 hover:bg-white"
+            >
+              {sort}
+            </button>
+          ))}
         </div>
-
-        {/* Reply Input - WITH SEND BUTTON */}
-       {/* Reply Input - WITH SEND BUTTON */}
-{replyingToFeed === comment.id && (
-  <div className="ml-10 mt-2 flex gap-2">
-    <input
-      type="text"
-      value={replyText}
-      onChange={(e) => setReplyText(e.target.value)}
-      onKeyPress={(e) => {
-        if (e.key === "Enter" && replyText.trim()) {
-          handleAddFeedComment(post.id, comment.id);
-        }
-      }}
-      placeholder="Write a reply..."
-      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-      autoFocus
-    />
-    <button
-      onClick={() => handleAddFeedComment(post.id, comment.id)}
-      disabled={!replyText.trim()}
-      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-    >
-      <Send className="w-4 h-4" />
-      <span className="hidden sm:inline">Reply</span>
-    </button>
-    <button
-      onClick={() => {
-        setReplyingToFeed(null);
-        setReplyText('');
-      }}
-      className="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm font-semibold"
-    >
-      Cancel
-    </button>
-  </div>
-)}
-
-{/* Replies - FIXED to use reply.name */}
-{comment.replies?.map((reply) => (
-  <div key={reply.id} className="ml-10 mt-2 flex gap-2">
-   <div
-      onClick={() => openUserProfile(reply.user_id)}
-      className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-indigo-400 transition-all">
-      {getInitial(reply.name)}
+      )}
     </div>
-    <div className="flex-1 bg-white rounded-lg p-2 border border-gray-200">
-      <div className="flex items-center gap-2 mb-1">
-        <span
-            onClick={() => openUserProfile(reply.user_id)}
-            className="font-semibold text-sm text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors">
-              {reply.name}
-            </span>
-        <span className="text-xs text-gray-500">
-          {new Date(reply.created_at).toLocaleTimeString()}
-        </span>
-        {user && user.name === reply.name && (
-          <button
-            onClick={() => handleDeleteFeedComment(reply.id, post.id)}
-            className="text-red-600 hover:text-red-800 text-xs ml-auto"
-          >
-            Delete
-          </button>
-        )}
-      </div>
-      <p className="text-sm text-gray-900">
-        {reply.content}
-      </p>
-    </div>
-  </div>
-))}
 
+    {/* Empty state */}
+    {(!feedComments[post.id] || feedComments[post.id].length === 0) && (
+      <div className="px-4 py-6 text-center">
+        <div className="text-3xl mb-2">💬</div>
+        <p className="text-sm font-semibold text-gray-700 mb-1">No comments yet</p>
+        <p className="text-xs text-gray-400 mb-3">Be the first to start the conversation!</p>
+        <div className="flex flex-wrap gap-2 justify-center">
+          {["Who's coming? 🙋", "Any dress code? 👔", "Anyone from Nairobi? 📍"].map((prompt) => (
+            <button
+              key={prompt}
+              onClick={() => {
+                // focus the input — handled by CommentInput autofocus
+              }}
+              className="text-xs bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-full font-medium hover:bg-indigo-100 transition-all"
+            >
+              {prompt}
+            </button>
+          ))}
+        </div>
       </div>
-    ))}
+    )}
+
+    {/* Comments list */}
+    <div className="px-4 pb-2 space-y-4 max-h-96 overflow-y-auto">
+      {feedComments[post.id]?.map((comment) => {
+        const isOrganizer = post.event_id && comment.user_id === post.organizer_id;
+        const isPinned = comment.is_pinned;
+
+        return (
+          <div key={comment.id}>
+            {/* Pinned badge */}
+            {isPinned && (
+              <div className="flex items-center gap-1 text-xs text-amber-600 font-semibold mb-1 ml-10">
+                📌 Pinned by organizer
+              </div>
+            )}
+
+            {/* Comment row */}
+            <div className="flex gap-2.5">
+              {/* Avatar */}
+              <div
+                onClick={() => openUserProfile(comment.user_id)}
+                className="w-8 h-8 rounded-full flex-shrink-0 cursor-pointer overflow-hidden border-2 border-gray-100 hover:border-indigo-300 transition-all"
+              >
+                {comment.profile_picture ? (
+                  <img src={comment.profile_picture} alt={comment.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-xs">
+                    {getInitial(comment.name)}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0">
+                {/* Bubble */}
+                <div className={`rounded-2xl rounded-tl-sm px-3 py-2 inline-block max-w-full ${isPinned ? 'bg-amber-50 border border-amber-200' : 'bg-gray-100'}`}>
+                  <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                    <span
+                      onClick={() => openUserProfile(comment.user_id)}
+                      className="font-bold text-sm text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors"
+                    >
+                      {comment.name}
+                    </span>
+                    {isOrganizer && (
+                      <span className="text-xs bg-indigo-600 text-white px-1.5 py-0.5 rounded-full font-semibold">
+                        ⭐ Organizer
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-800 leading-relaxed">{comment.content}</p>
+                </div>
+
+                {/* Actions row */}
+                <div className="flex items-center gap-3 mt-1 ml-1">
+                  <span className="text-xs text-gray-400">
+                    {new Date(comment.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  {user && (
+                    <button
+                      onClick={() => setReplyingToFeed(replyingToFeed === comment.id ? null : comment.id)}
+                      className="text-xs text-gray-500 hover:text-indigo-600 font-semibold transition-colors"
+                    >
+                      Reply
+                    </button>
+                  )}
+                  {user && user.name === comment.name && (
+                    <button
+                      onClick={() => handleDeleteFeedComment(comment.id, post.id)}
+                      className="text-xs text-gray-400 hover:text-red-500 font-semibold transition-colors ml-auto"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+
+                {/* Reply input */}
+                {replyingToFeed === comment.id && (
+                  <div className="mt-2">
+                    <CommentInput
+                      postId={post.id}
+                      parentCommentId={comment.id}
+                      placeholder={`Reply to ${comment.name}...`}
+                      onSubmit={(postId) => {
+                        fetchFeedComments(postId);
+                      }}
+                      onCancel={() => setReplyingToFeed(null)}
+                      authToken={authToken}
+                      API_URL={API_URL}
+                      showInfoToast={showInfoToast}
+                      showSuccessToast={showSuccessToast}
+                      showErrorToast={showErrorToast}
+                      user={user}
+                      getInitial={getInitial}
+                      requireVerification={requireVerification}
+                    />
+                  </div>
+                )}
+
+                {/* Replies */}
+                {comment.replies?.length > 0 && (
+                  <div className="mt-2 space-y-2 border-l-2 border-indigo-100 pl-3 ml-1">
+                    {comment.replies.map((reply) => (
+                      <div key={reply.id} className="flex gap-2">
+                        <div
+                          onClick={() => openUserProfile(reply.user_id)}
+                          className="w-6 h-6 rounded-full flex-shrink-0 cursor-pointer overflow-hidden border border-gray-200 hover:border-indigo-300 transition-all"
+                        >
+                          {reply.profile_picture ? (
+                            <img src={reply.profile_picture} alt={reply.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-blue-400 to-teal-500 flex items-center justify-center text-white font-bold text-xs">
+                              {getInitial(reply.name)}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-3 py-2 inline-block max-w-full">
+                            <span
+                              onClick={() => openUserProfile(reply.user_id)}
+                              className="font-bold text-xs text-gray-900 cursor-pointer hover:text-indigo-600 transition-colors"
+                            >
+                              {reply.name}
+                            </span>
+                            <p className="text-xs text-gray-800 mt-0.5 leading-relaxed">{reply.content}</p>
+                          </div>
+                          <div className="flex items-center gap-3 mt-0.5 ml-1">
+                            <span className="text-xs text-gray-400">
+                              {new Date(reply.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            {user && user.name === reply.name && (
+                              <button
+                                onClick={() => handleDeleteFeedComment(reply.id, post.id)}
+                                className="text-xs text-gray-400 hover:text-red-500 font-semibold transition-colors"
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+
+    {/* Comment input at bottom */}
+    {user && (
+      <div className="px-4 pb-4 pt-2 border-t border-gray-50">
+        <CommentInput
+          postId={post.id}
+          onSubmit={(postId) => {
+            fetchFeedComments(postId);
+            setFeedPosts(prevPosts =>
+              prevPosts.map(p =>
+                p.id === postId
+                  ? { ...p, comment_count: (p.comment_count || 0) + 1 }
+                  : p
+              )
+            );
+          }}
+          authToken={authToken}
+          API_URL={API_URL}
+          showInfoToast={showInfoToast}
+          showSuccessToast={showSuccessToast}
+          showErrorToast={showErrorToast}
+          user={user}
+          getInitial={getInitial}
+          requireVerification={requireVerification}
+        />
+      </div>
+    )}
   </div>
 )}
 
