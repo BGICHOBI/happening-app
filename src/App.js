@@ -7258,7 +7258,7 @@ const OrganizerDashboard = ({ show, onClose, event }) => {
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-800 leading-relaxed">{comment.content}</p>
+                  <p className="text-sm text-gray-800 leading-relaxed break-words" style={{overflowWrap: 'anywhere', wordBreak: 'break-word'}}>{comment.content}</p>
                 </div>
 
                 {/* Actions row */}
@@ -7332,7 +7332,7 @@ const OrganizerDashboard = ({ show, onClose, event }) => {
                             >
                               {reply.name}
                             </span>
-                            <p className="text-xs text-gray-800 mt-0.5 leading-relaxed">{reply.content}</p>
+                            <p className="text-xs text-gray-800 mt-0.5 leading-relaxed break-words" style={{overflowWrap: 'anywhere', wordBreak: 'break-word'}}>{reply.content}</p>
                           </div>
                           <div className="flex items-center gap-3 mt-0.5 ml-1">
                             <span className="text-xs text-gray-400">
