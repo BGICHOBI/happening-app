@@ -734,7 +734,15 @@ const [newEvent, setNewEvent] = useState({
       </div>
     );
   };
-
+  
+useEffect(() => {
+  if (view === "event-feed" && posts.length > 0) {
+    posts.forEach((post) => {
+      fetchPostReactions(post.id);
+      fetchPostComments(post.id);
+    });
+  }
+}, [view, posts.length]);
 
   // Stats Modal Component
   const StatsModal = ({
@@ -7332,7 +7340,7 @@ const OrganizerDashboard = ({ show, onClose, event }) => {
   <div className="mt-2">
     <CommentInput
       postId={post.id}
-      endpoint="post-comments"
+      endpoint="feed-comments"
       parentCommentId={comment.id}
       placeholder={`Reply to ${comment.name}...`}
       initialValue={replyingToReplyName ? `@${replyingToReplyName} ` : ''}
@@ -7420,7 +7428,7 @@ const OrganizerDashboard = ({ show, onClose, event }) => {
       <div className="px-4 pb-4 pt-2 border-t border-gray-50">
         <CommentInput
           postId={post.id}
-          endpoint="post-comments"
+          endpoint="feed-comments"
           onSubmit={(postId) => {
             fetchFeedComments(postId);
             setFeedPosts(prevPosts =>
@@ -13009,9 +13017,14 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
         );
 
         uniquePosts.sort(
-          (a, b) => new Date(b.created_at) - new Date(a.created_at),
-        );
-        setPosts(uniquePosts);
+  (a, b) => new Date(b.created_at) - new Date(a.created_at),
+);
+setPosts(uniquePosts);
+// Pre-fetch reactions and comments for all posts
+uniquePosts.forEach((post) => {
+  fetchPostReactions(post.id);
+  fetchPostComments(post.id);
+});
       } catch (error) {
         console.error("Error refreshing posts:", error);
       }
@@ -13073,10 +13086,15 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                 index === self.findIndex((p) => p.id === post.id),
             );
 
-            uniquePosts.sort(
-              (a, b) => new Date(b.created_at) - new Date(a.created_at),
-            );
-            setPosts(uniquePosts);
+           uniquePosts.sort(
+  (a, b) => new Date(b.created_at) - new Date(a.created_at),
+);
+setPosts(uniquePosts);
+// Pre-fetch reactions and comments for all posts
+uniquePosts.forEach((post) => {
+  fetchPostReactions(post.id);
+  fetchPostComments(post.id);
+});
           } catch (error) {
             console.error("Error refreshing posts:", error);
           }
