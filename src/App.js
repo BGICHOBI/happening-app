@@ -536,8 +536,10 @@ const suggestedTags = [
 ];
   // Event chat state
   const [eventMessages, setEventMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [loadingMessages, setLoadingMessages] = useState(false);
+const [newMessage, setNewMessage] = useState("");
+const [loadingMessages, setLoadingMessages] = useState(false);
+const [showChatEmojiPicker, setShowChatEmojiPicker] = useState(false);
+const chatEmojiPickerRef = useRef(null);
 
   // Image modal state
   const [showImageModal, setShowImageModal] = useState(false);
@@ -734,7 +736,7 @@ const [newEvent, setNewEvent] = useState({
       </div>
     );
   };
-  
+
 useEffect(() => {
   if (view === "event-feed" && posts.length > 0) {
     posts.forEach((post) => {
@@ -1672,6 +1674,16 @@ useEffect(() => {
   return () => document.removeEventListener("mousedown", handleClickOutside);
 }, []);
   
+useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (chatEmojiPickerRef.current && !chatEmojiPickerRef.current.contains(event.target)) {
+      setShowChatEmojiPicker(false);
+    }
+  };
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, []);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     console.log(API_URL);
@@ -12810,7 +12822,7 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
         </header>
 
         <div
-          className="max-w-4xl mx-auto px-4 py-6 flex flex-col"
+          className="max-w-4xl mx-auto px-4 py-6 flex flex-col overflow-hidden"
           style={{ height: "calc(100vh - 100px)" }}
         >
           {/* Messages Container */}
@@ -12869,14 +12881,15 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
                       )}
                     </div>
                     <div
-                      className={`${user && user.name === msg.user_name ? "bg-green-600 text-white" : "bg-white"} rounded-2xl px-4 py-2 shadow-sm`}
-                    >
-                      <p
-                        className={`${user && user.name === msg.user_name ? "text-white" : "text-gray-900"}`}
-                      >
-                        {msg.message}
-                      </p>
-                    </div>
+  className={`${user && user.name === msg.user_name ? "bg-green-600 text-white" : "bg-white"} rounded-2xl px-4 py-2 shadow-sm`}
+>
+  <p
+    className={`${user && user.name === msg.user_name ? "text-white" : "text-gray-900"} break-words`}
+    style={{overflowWrap: 'anywhere', wordBreak: 'break-word'}}
+  >
+    {msg.message}
+  </p>
+</div>
                   </div>
                 </div>
               ))
@@ -12885,29 +12898,56 @@ filteredEvents = applyAdvancedFilters(filteredEvents, activeFilters);
 
           {/* Message Input */}
           {user && (
-            <div className="bg-white rounded-2xl shadow-sm p-4 sticky bottom-0">
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter" && newMessage.trim()) {
-                      handleSendMessage(selectedEvent.id);
-                    }
-                  }}
-                  placeholder="Type a message..."
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-                <button
-                  onClick={() => handleSendMessage(selectedEvent.id)}
-                  disabled={!newMessage.trim()}
-                  className="px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg font-semibold hover:shadow-sm transition-all disabled:opacity-50"
-                >
-                  Send
-                </button>
-              </div>
-            </div>
+           <div className="bg-white rounded-2xl shadow-sm p-3 sticky bottom-0">
+  <div className="relative">
+    {showChatEmojiPicker && (
+      <div className="absolute bottom-full mb-2 left-0 z-50" ref={chatEmojiPickerRef}>
+        <EmojiPicker
+          onEmojiClick={(emojiData) => {
+            setNewMessage(prev => prev + emojiData.emoji);
+          }}
+          width={300}
+          height={350}
+        />
+      </div>
+    )}
+    <div className="flex items-end gap-2 border border-gray-300 rounded-xl px-3 py-2 focus-within:ring-2 focus-within:ring-green-500 focus-within:border-transparent">
+      <button
+        type="button"
+        onClick={() => setShowChatEmojiPicker(prev => !prev)}
+        className="p-1 text-gray-400 hover:text-yellow-500 transition-colors flex-shrink-0 mb-0.5"
+      >
+        <span className="text-xl">😊</span>
+      </button>
+      <textarea
+        value={newMessage}
+        onChange={(e) => setNewMessage(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            if (newMessage.trim()) handleSendMessage(selectedEvent.id);
+          }
+        }}
+        placeholder="Type a message..."
+        rows={1}
+        className="flex-1 resize-none focus:outline-none text-gray-900 placeholder-gray-400 text-sm py-1 max-h-32"
+        style={{ overflowY: 'auto' }}
+      />
+      <button
+        onClick={() => {
+          handleSendMessage(selectedEvent.id);
+          setShowChatEmojiPicker(false);
+        }}
+        disabled={!newMessage.trim()}
+        className="flex-shrink-0 w-9 h-9 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-full flex items-center justify-center disabled:opacity-50 transition-all hover:shadow-md mb-0.5"
+      >
+        <svg className="w-4 h-4 rotate-90" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
           )}
         </div>
       </div>
